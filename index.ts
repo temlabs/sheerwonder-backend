@@ -3,6 +3,7 @@ import fastify from "fastify";
 require("dotenv").config();
 
 const server = fastify();
+const port = (process.env.PORT as unknown as number) ?? 3000;
 
 server.get("/ping", async (request, reply) => {
   return "pong\n";
@@ -10,7 +11,7 @@ server.get("/ping", async (request, reply) => {
 
 server.listen(
   {
-    port: 8080,
+    port: port,
     host: (process.env.NODE_ENV = "dev" ? "127.0.0.1" : "0.0.0.0"),
   },
   (err, address) => {
