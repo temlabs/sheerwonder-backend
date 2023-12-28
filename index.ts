@@ -16,7 +16,7 @@ server.get("/ping", async (request, reply) => {
 server.listen(
   {
     port: port,
-    host: (process.env.NODE_ENV = "dev" ? "127.0.0.1" : "0.0.0.0"),
+    host: process.env.NODE_ENV === "dev" ? "127.0.0.1" : "0.0.0.0",
   },
   (err, address) => {
     if (err) {
