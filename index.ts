@@ -1,15 +1,23 @@
 import fastify from "fastify";
 
+require("dotenv").config();
+
 const server = fastify();
 
 server.get("/ping", async (request, reply) => {
   return "pong\n";
 });
 
-server.listen({ port: 8080, host: "127.0.0.1" }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
+server.listen(
+  {
+    port: 8080,
+    host: (process.env.NODE_ENV = "dev" ? "127.0.0.1" : "0.0.0.0"),
+  },
+  (err, address) => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    console.log(`Server listening at ${address}`);
   }
-  console.log(`Server listening at ${address}`);
-});
+);
