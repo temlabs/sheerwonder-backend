@@ -1,11 +1,15 @@
 {
   "dependencies": {
+    "@fastify/postgres": "^5.2.2",
     "dotenv": "^16.3.1",
-    "fastify": "^4.25.2"
+    "fastify": "^4.25.2",
+    "pg": "^8.11.3",
+    "stytch": "^10.3.0"
   },
   "devDependencies": {
     "@tsconfig/node21": "^21.0.0",
     "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
     "typescript": "^5.3.3"
   },
   "scripts": {
