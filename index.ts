@@ -18,7 +18,7 @@ server.register(fastifyPostgress, {
 });
 
 server.get("/", async (request, reply) => {
-  return "hello world hiiii!\n";
+  return "hello world, what's good?!\n";
 });
 
 server.get("/ping", async (request, reply) => {
