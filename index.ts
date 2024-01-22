@@ -7,6 +7,13 @@ import {
   getUsersOptions,
   searchUsers,
 } from "./src/auth/stytch/searchUsers";
+import { LoginBodySchema, login, loginOptions } from "./src/auth/stytch/login";
+import { StytchError } from "stytch";
+import {
+  SignUpBodySchema,
+  signUp,
+  signUpOptions,
+} from "./src/auth/stytch/signUp";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -68,12 +75,52 @@ server.get<{ Querystring: GetUsersSchema }>(
         return user.name?.first_name === username.replaceAll("@", "");
       }
       return !!user;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       reply.status(500).send("Error querying the database");
     }
   }
 );
+
+server.post("/login", loginOptions, async (request, reply) => {
+  const body: LoginBodySchema = request.body as LoginBodySchema;
+
+  try {
+    const res = await login(body);
+    return res;
+  } catch (error) {
+    console.error(error);
+    if (error instanceof StytchError) {
+      reply.status(error.status_code).send({
+        message: error.error_message,
+        name: error.name,
+        type: error.error_type,
+      });
+      return;
+    }
+    reply.status(500).send("Error querying the database");
+  }
+});
+
+server.post("/signUp", signUpOptions, async (request, reply) => {
+  const body: SignUpBodySchema = request.body as SignUpBodySchema;
+
+  try {
+    const res = await signUp(body);
+    return res;
+  } catch (error) {
+    console.error(error);
+    if (error instanceof StytchError) {
+      reply.status(error.status_code).send({
+        message: error.error_message,
+        name: error.name,
+        type: error.error_type,
+      });
+      return;
+    }
+    reply.status(500).send("Error querying the database");
+  }
+});
 
 server.listen(
   {
