@@ -16,7 +16,7 @@ if (process.env.NODE_ENV === "dev") {
   const certificatePath = "C:\\localhost.crt";
   const privateKey = fs.readFileSync(privateKeyPath, "utf8");
   const certificate = fs.readFileSync(certificatePath, "utf8");
-
+  //pls deploy
   const credentials = { key: privateKey, cert: certificate };
   serverOptions = { https: credentials };
 }
