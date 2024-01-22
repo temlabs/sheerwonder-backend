@@ -5,8 +5,6 @@ import {
   searchUsers,
 } from "./searchUsers";
 
-const stytch = require("stytch");
-
 export const login = async ({
   username,
   password,
