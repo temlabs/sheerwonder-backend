@@ -1,0 +1,1 @@
+export const BEGINNING_OF_TIME = "0001-01-01T00:00:00Z";
