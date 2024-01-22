@@ -9,8 +9,21 @@ import {
 } from "./src/auth/stytch/searchUsers";
 
 require("dotenv").config();
+const fs = require("fs");
+let serverOptions = {};
+if (process.env.NODE_ENV === "dev") {
+  const privateKeyPath = "C:\\localhost.key";
+  const certificatePath = "C:\\localhost.crt";
+  const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+  const certificate = fs.readFileSync(certificatePath, "utf8");
 
-const server = fastify();
+  const credentials = { key: privateKey, cert: certificate };
+  serverOptions = { https: credentials };
+}
+const server = fastify(serverOptions);
+
+const ser = fastify();
+
 const port = (process.env.PORT as unknown as number) || 3000;
 
 server.register(fastifyPostgress, {
