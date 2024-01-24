@@ -1,3 +1,4 @@
+import { MAX_SESSION_TIME } from "../authConfig";
 import { createStytchClient } from "../authUtils";
 import {
   createdBeforeNowFilter,
@@ -16,6 +17,7 @@ export const login = async ({
     throw error;
   }
   let email = emailArg ?? "";
+
   if (!emailArg) {
     const user = await searchUsers([
       createdBeforeNowFilter(),
@@ -27,7 +29,12 @@ export const login = async ({
   }
 
   try {
-    const res = await client.passwords.authenticate({ email, password });
+    const res = await client.passwords.authenticate({
+      email,
+      password,
+      session_duration_minutes: MAX_SESSION_TIME,
+    });
+
     return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
   } catch (error) {
     throw error;

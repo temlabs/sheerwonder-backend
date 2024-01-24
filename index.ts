@@ -87,6 +87,7 @@ server.post("/login", loginOptions, async (request, reply) => {
 
   try {
     const res = await login(body);
+
     return res;
   } catch (error) {
     console.error(error);

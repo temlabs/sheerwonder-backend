@@ -15,6 +15,7 @@ export const signUp = async ({
       name: { first_name: username },
       session_duration_minutes: MAX_SESSION_TIME,
     });
+
     return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
   } catch (error) {
     throw error;
