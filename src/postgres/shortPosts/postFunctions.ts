@@ -1,7 +1,14 @@
 import { PoolClient } from "pg";
-import { DBShortPost, DBTrack } from "../rowTypes";
+import { DBShortPost } from "../rowTypes";
 import { CreateDBShortPostParams } from "../../routes/createShortPost";
 import { createTrack } from "../tracks/trackFunctions";
+import { getWhereConditionsFromFilter } from "../filterFunctions";
+import { SHORT_POST_READ_LIMIT } from "./shortPostConfig";
+import { FilterSchema, SortBy } from "../filterTypes";
+import {
+  ReadShortPostFilterKey,
+  ReadShortPostQueryStringParams,
+} from "../../routes/readShortPosts";
 
 export const createShortPost = async (
   dbClient: PoolClient,
@@ -29,4 +36,36 @@ export const createShortPost = async (
   const { rows } = await dbClient.query<DBShortPost>(query, values);
 
   return rows[0];
+};
+
+export const readShortPosts = async (
+  dbClient: PoolClient,
+  filters: ReadShortPostQueryStringParams,
+  filterSchema: FilterSchema<DBShortPost, ReadShortPostFilterKey>,
+  offset: string = "0",
+  sortBy: SortBy = "date"
+) => {
+  const filterKeys = Object.keys(filters) as ReadShortPostFilterKey[];
+  const whereClause = filterKeys?.length
+    ? ` WHERE ${getWhereConditionsFromFilter<
+        DBShortPost,
+        ReadShortPostFilterKey
+      >(filters, filterSchema).join(" AND ")}`
+    : "";
+  console.debug(whereClause);
+  const orderClause = ` ORDER BY ${
+    sortBy === "popularity" ? "upvote_count DESC" : "created_at DESC"
+  }`;
+  console.debug(orderClause);
+  const limitOffsetClause = ` LIMIT ${SHORT_POST_READ_LIMIT} OFFSET ${
+    offset ?? 0
+  }`;
+
+  const query = `SELECT * FROM short_posts${whereClause}${orderClause}${limitOffsetClause}`;
+  const values =
+    filterKeys?.map((key: ReadShortPostFilterKey) => filters[key]) || [];
+
+  const res = await dbClient.query<DBShortPost>(query, values);
+
+  return res.rows;
 };

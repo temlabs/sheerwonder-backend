@@ -1,3 +1,7 @@
+export type BasicRowType = {
+  [key: string]: string | null | boolean | number | Date;
+};
+
 export interface DBUser {
   id: string;
   created_at: string;
@@ -30,4 +34,16 @@ export interface DBTrack {
   spotify_id: string | null;
   duration: number | null;
   created_at: string;
+}
+
+export interface DBShortPostComment {
+  id: string;
+  userId: string | null;
+  shortPostId: string | null;
+  commentText: string;
+  createdAt: Date;
+  parentId: string | null;
+  upvoteCount: number;
+  active: boolean;
+  isThreadStart: boolean;
 }
