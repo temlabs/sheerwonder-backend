@@ -202,7 +202,7 @@ server.get<{
       sortBy
     );
     dbClient.release();
-    return { res };
+    return res;
   } catch (error) {
     console.error(error);
     reply.status(500).send("Error querying the database");
