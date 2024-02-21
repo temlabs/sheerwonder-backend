@@ -16,7 +16,11 @@ export const signUp = async ({
       session_duration_minutes: MAX_SESSION_TIME,
     });
 
-    return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
+    return {
+      sessionJwt: res.session_jwt,
+      sessionToken: res.session_token,
+      userId: res.user_id,
+    };
   } catch (error) {
     throw error;
   }

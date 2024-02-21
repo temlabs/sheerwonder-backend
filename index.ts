@@ -14,6 +14,26 @@ import {
   signUp,
   signUpOptions,
 } from "./src/auth/stytch/signUp";
+import { createDatabaseUser } from "./src/postgres/users/userFunctions";
+import {
+  CreateDBShortPostParams,
+  createShortPostOptions,
+} from "./src/routes/createShortPost";
+import {
+  createShortPost,
+  readShortPosts,
+} from "./src/postgres/shortPosts/postFunctions";
+import {
+  CreateDBTrackParams,
+  createTrackOptions,
+} from "./src/routes/createTrack";
+import { createTrack } from "./src/postgres/tracks/trackFunctions";
+import {
+  ReadShortPostQueryStringParams,
+  readShortPostFilterSchema,
+  readShortPostOptions,
+} from "./src/routes/readShortPosts";
+import { SortBy } from "./src/postgres/filterTypes";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -108,7 +128,10 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
 
   try {
     const res = await signUp(body);
-    return res;
+    const dbClient = await server.pg.connect();
+    const dbUser = await createDatabaseUser(dbClient, res.userId);
+    dbClient.release();
+    return { ...res, user: dbUser[0] };
   } catch (error) {
     console.error(error);
     if (error instanceof StytchError) {
@@ -119,6 +142,69 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
       });
       return;
     }
+    reply.status(500).send("Error querying the database");
+  }
+});
+
+server.post(
+  "/createShortPost",
+  createShortPostOptions,
+  async (request, reply) => {
+    const body: CreateDBShortPostParams =
+      request.body as CreateDBShortPostParams;
+
+    try {
+      const dbClient = await server.pg.connect();
+      const res = await createShortPost(dbClient, body);
+      dbClient.release();
+      return { ...res };
+    } catch (error) {
+      console.error(error);
+      reply.status(500).send("Error querying the database");
+    }
+  }
+);
+
+server.post("/createTrack", createTrackOptions, async (request, reply) => {
+  const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
+
+  try {
+    const dbClient = await server.pg.connect();
+    const res = await createTrack(dbClient, body);
+    dbClient.release();
+    return { ...res[0] };
+  } catch (error) {
+    console.error(error);
+    reply.status(500).send("Error querying the database");
+  }
+});
+
+server.get<{
+  Querystring: ReadShortPostQueryStringParams & {
+    offset?: string;
+    sort_by?: SortBy;
+  };
+}>("/shortPosts", readShortPostOptions, async (request, reply) => {
+  // console.debug(readShortPostOptions);
+  const filters = request.query;
+  const offset = filters.offset;
+  const sortBy = filters.sort_by;
+  delete filters.sort_by;
+  delete filters.offset;
+
+  try {
+    const dbClient = await server.pg.connect();
+    const res = await readShortPosts(
+      dbClient,
+      filters,
+      readShortPostFilterSchema,
+      offset,
+      sortBy
+    );
+    dbClient.release();
+    return res;
+  } catch (error) {
+    console.error(error);
     reply.status(500).send("Error querying the database");
   }
 });
