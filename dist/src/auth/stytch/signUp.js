@@ -12,7 +12,11 @@ const signUp = async ({ username, password, email, }) => {
             name: { first_name: username },
             session_duration_minutes: authConfig_1.MAX_SESSION_TIME,
         });
-        return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
+        return {
+            sessionJwt: res.session_jwt,
+            sessionToken: res.session_token,
+            userId: res.user_id,
+        };
     }
     catch (error) {
         throw error;

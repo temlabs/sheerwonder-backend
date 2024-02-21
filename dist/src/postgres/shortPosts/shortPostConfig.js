@@ -1,4 +1,4 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_SESSION_TIME = void 0;
-exports.MAX_SESSION_TIME = 527039;
+exports.SHORT_POST_READ_LIMIT = void 0;
+exports.SHORT_POST_READ_LIMIT = 10;
