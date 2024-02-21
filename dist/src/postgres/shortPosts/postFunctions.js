@@ -12,11 +12,11 @@ const createShortPost = async (dbClient, shortPost) => {
     }
     const idProvided = !!shortPost.id;
     const query = idProvided
-        ? "INSERT INTO short_posts (id, user_id, post_text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
-        : "INSERT INTO short_posts (user_id, post_text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+        ? "INSERT INTO short_posts (id, user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
+        : "INSERT INTO short_posts (user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
     const commonValues = [
         shortPost.user_id,
-        shortPost.post_text,
+        shortPost.text,
         trackRows[0].id,
         shortPost.time_in,
         shortPost.time_out,
@@ -31,11 +31,11 @@ const readShortPosts = async (dbClient, filters, filterSchema, offset = "0", sor
     const whereClause = (filterKeys === null || filterKeys === void 0 ? void 0 : filterKeys.length)
         ? ` WHERE ${(0, filterFunctions_1.getWhereConditionsFromFilter)(filters, filterSchema).join(" AND ")}`
         : "";
-    console.debug(whereClause);
-    const orderClause = ` ORDER BY ${sortBy === "popularity" ? "upvote_count DESC" : "created_at DESC"}`;
-    console.debug(orderClause);
+    const orderClause = ` ORDER BY ${sortBy === "popularity"
+        ? "short_posts.upvote_count DESC"
+        : "short_posts.created_at DESC"}`;
     const limitOffsetClause = ` LIMIT ${shortPostConfig_1.SHORT_POST_READ_LIMIT} OFFSET ${offset !== null && offset !== void 0 ? offset : 0}`;
-    const query = `SELECT * FROM short_posts${whereClause}${orderClause}${limitOffsetClause}`;
+    const query = `SELECT short_posts.*, users.username, users.display_name, users.avatar_url,tracks.* FROM short_posts${whereClause} JOIN users ON short_posts.user_id = users.id JOIN tracks ON short_posts.track_id = tracks.id ${orderClause}${limitOffsetClause}`;
     const values = (filterKeys === null || filterKeys === void 0 ? void 0 : filterKeys.map((key) => filters[key])) || [];
     const res = await dbClient.query(query, values);
     return res.rows;

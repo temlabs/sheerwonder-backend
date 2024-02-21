@@ -11,12 +11,13 @@ export interface DBUser {
   following_count: number;
   sign_up_order_number: number;
   display_name: string | null;
+  username: string;
 }
 
 export interface DBShortPost {
   id: string;
   user_id: string;
-  post_text: string;
+  text: string;
   reply_count: number;
   upvote_count: number;
   save_count: number;
@@ -24,6 +25,14 @@ export interface DBShortPost {
   time_in: number | null;
   time_out: number | null;
   created_at: string;
+  username: DBUser["username"];
+  display_name: DBUser["display_name"];
+  avatar_url: DBUser["avatar_url"];
+  artist: DBTrack["artist"];
+  artwork: DBTrack["artwork"];
+  spotify_id: DBTrack["spotify_id"];
+  duration: DBTrack["duration"];
+  name: DBTrack["name"];
 }
 
 export interface DBTrack {

@@ -14,7 +14,7 @@ const readShortPostFilterKeys = [
     "save_count_min",
     "save_count_max",
     "track_id",
-    "post_text",
+    "text",
 ];
 exports.readShortPostFilterSchema = {
     user_id: {
@@ -67,10 +67,10 @@ exports.readShortPostFilterSchema = {
         type: "string",
         dbColumn: "track_id",
     },
-    post_text: {
+    text: {
         operation: filterTypes_1.FILTER_OPERATION.LIKE,
         type: "string",
-        dbColumn: "post_text",
+        dbColumn: "text",
     },
 };
 exports.readShortPostOptions = {

@@ -23,11 +23,11 @@ export const createShortPost = async (
   }
   const idProvided = !!shortPost.id;
   const query = idProvided
-    ? "INSERT INTO short_posts (id, user_id, post_text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
-    : "INSERT INTO short_posts (user_id, post_text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+    ? "INSERT INTO short_posts (id, user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
+    : "INSERT INTO short_posts (user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
   const commonValues = [
     shortPost.user_id,
-    shortPost.post_text,
+    shortPost.text,
     trackRows[0].id,
     shortPost.time_in,
     shortPost.time_out,
@@ -52,16 +52,18 @@ export const readShortPosts = async (
         ReadShortPostFilterKey
       >(filters, filterSchema).join(" AND ")}`
     : "";
-  console.debug(whereClause);
+
   const orderClause = ` ORDER BY ${
-    sortBy === "popularity" ? "upvote_count DESC" : "created_at DESC"
+    sortBy === "popularity"
+      ? "short_posts.upvote_count DESC"
+      : "short_posts.created_at DESC"
   }`;
-  console.debug(orderClause);
+
   const limitOffsetClause = ` LIMIT ${SHORT_POST_READ_LIMIT} OFFSET ${
     offset ?? 0
   }`;
 
-  const query = `SELECT * FROM short_posts${whereClause}${orderClause}${limitOffsetClause}`;
+  const query = `SELECT short_posts.*, users.username, users.display_name, users.avatar_url,tracks.* FROM short_posts${whereClause} JOIN users ON short_posts.user_id = users.id JOIN tracks ON short_posts.track_id = tracks.id ${orderClause}${limitOffsetClause}`;
   const values =
     filterKeys?.map((key: ReadShortPostFilterKey) => filters[key]) || [];
 
