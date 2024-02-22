@@ -9,6 +9,7 @@ import {
   ReadShortPostFilterKey,
   ReadShortPostQueryStringParams,
 } from "../../routes/readShortPosts";
+import { extractUUID } from "../../utils";
 
 export const createShortPost = async (
   dbClient: PoolClient,
@@ -26,7 +27,7 @@ export const createShortPost = async (
     ? "INSERT INTO short_posts (id, user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
     : "INSERT INTO short_posts (user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
   const commonValues = [
-    shortPost.user_id,
+    extractUUID(shortPost.user_id),
     shortPost.text,
     trackRows[0].id,
     shortPost.time_in,

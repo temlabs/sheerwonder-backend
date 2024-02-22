@@ -4,6 +4,7 @@ exports.readShortPosts = exports.createShortPost = void 0;
 const trackFunctions_1 = require("../tracks/trackFunctions");
 const filterFunctions_1 = require("../filterFunctions");
 const shortPostConfig_1 = require("./shortPostConfig");
+const utils_1 = require("../../utils");
 const createShortPost = async (dbClient, shortPost) => {
     const track = shortPost.track;
     const trackRows = await (0, trackFunctions_1.createTrack)(dbClient, track);
@@ -15,7 +16,7 @@ const createShortPost = async (dbClient, shortPost) => {
         ? "INSERT INTO short_posts (id, user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
         : "INSERT INTO short_posts (user_id, text, track_id, time_in, time_out) VALUES ($1, $2, $3, $4, $5) RETURNING *";
     const commonValues = [
-        shortPost.user_id,
+        (0, utils_1.extractUUID)(shortPost.user_id),
         shortPost.text,
         trackRows[0].id,
         shortPost.time_in,
