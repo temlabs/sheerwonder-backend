@@ -14,7 +14,10 @@ import {
   signUp,
   signUpOptions,
 } from "./src/auth/stytch/signUp";
-import { createDatabaseUser } from "./src/postgres/users/userFunctions";
+import {
+  createDatabaseUser,
+  readDatabaseUser,
+} from "./src/postgres/users/userFunctions";
 import {
   CreateDBShortPostParams,
   createShortPostOptions,
@@ -34,6 +37,7 @@ import {
   readShortPostOptions,
 } from "./src/routes/readShortPosts";
 import { SortBy } from "./src/postgres/filterTypes";
+import { GetUserSchema, getUserOptions } from "./src/routes/getUser";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -95,6 +99,24 @@ server.get<{ Querystring: GetUsersSchema }>(
         return user.name?.first_name === username.replaceAll("@", "");
       }
       return !!user;
+    } catch (error) {
+      console.error(error);
+      reply.status(500).send("Error querying the database");
+    }
+  }
+);
+
+server.get<{ Querystring: GetUserSchema }>(
+  "/user",
+  getUserOptions,
+  async (request, reply) => {
+    try {
+      const dbClient = await server.pg.connect();
+      const { userId = "" } = request.query;
+      const users = await readDatabaseUser(dbClient, userId);
+      const user =
+        users.length > 0 ? users[0] : reply.status(404).send("User not found");
+      return user;
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");

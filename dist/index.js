@@ -15,6 +15,7 @@ const postFunctions_1 = require("./src/postgres/shortPosts/postFunctions");
 const createTrack_1 = require("./src/routes/createTrack");
 const trackFunctions_1 = require("./src/postgres/tracks/trackFunctions");
 const readShortPosts_1 = require("./src/routes/readShortPosts");
+const getUser_1 = require("./src/routes/getUser");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -67,6 +68,19 @@ server.get("/userExists", searchUsers_1.getUsersOptions, async (request, reply) 
             return ((_a = user.name) === null || _a === void 0 ? void 0 : _a.first_name) === username.replaceAll("@", "");
         }
         return !!user;
+    }
+    catch (error) {
+        console.error(error);
+        reply.status(500).send("Error querying the database");
+    }
+});
+server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
+    try {
+        const dbClient = await server.pg.connect();
+        const { userId = "" } = request.query;
+        const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, userId);
+        const user = users.length > 0 ? users[0] : reply.status(404).send("User not found");
+        return user;
     }
     catch (error) {
         console.error(error);
