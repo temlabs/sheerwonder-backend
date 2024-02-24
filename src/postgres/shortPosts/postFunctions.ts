@@ -64,10 +64,10 @@ export const readShortPosts = async (
     offset ?? 0
   }`;
 
-  const query = `SELECT short_posts.*, users.username, users.display_name, users.avatar_url,tracks.artist, tracks.artwork, tracks.spotify_id, tracks.duration, tracks.name FROM short_posts${whereClause} JOIN users ON short_posts.user_id = users.id JOIN tracks ON short_posts.track_id = tracks.id ${orderClause}${limitOffsetClause}`;
+  const query = `SELECT short_posts.*, users.username, users.display_name, users.avatar_url,tracks.artist, tracks.artwork, tracks.spotify_id, tracks.duration, tracks.name FROM short_posts JOIN users ON short_posts.user_id = users.id JOIN tracks ON short_posts.track_id = tracks.id ${whereClause} ${orderClause}${limitOffsetClause}`;
   const values =
     filterKeys?.map((key: ReadShortPostFilterKey) => filters[key]) || [];
-
+  console.log(query);
   const res = await dbClient.query<DBShortPost>(query, values);
 
   return res.rows;

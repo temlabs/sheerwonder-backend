@@ -181,7 +181,6 @@ server.get("/shortPosts", readShortPosts_1.readShortPostOptions, async (request,
     const dbClient = await server.pg.connect();
     try {
         const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset, sortBy);
-        dbClient.release();
         return res;
     }
     catch (error) {
