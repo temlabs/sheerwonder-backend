@@ -79,8 +79,11 @@ server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
         const dbClient = await server.pg.connect();
         const { userId = "" } = request.query;
         const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, userId);
-        const user = users.length > 0 ? users[0] : reply.status(404).send("User not found");
-        return user;
+        if (users.length === 0) {
+            reply.status(404).send("User not found");
+            return;
+        }
+        return users[0];
     }
     catch (error) {
         console.error(error);

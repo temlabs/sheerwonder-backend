@@ -114,9 +114,12 @@ server.get<{ Querystring: GetUserSchema }>(
       const dbClient = await server.pg.connect();
       const { userId = "" } = request.query;
       const users = await readDatabaseUser(dbClient, userId);
-      const user =
-        users.length > 0 ? users[0] : reply.status(404).send("User not found");
-      return user;
+      if (users.length === 0) {
+        reply.status(404).send("User not found");
+        return;
+      }
+
+      return users[0];
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
