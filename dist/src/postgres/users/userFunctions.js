@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.readDatabaseUser = exports.createDatabaseUser = void 0;
 const utils_1 = require("../../utils");
-const createDatabaseUser = async (dbClient, userId) => {
+const createDatabaseUser = async (dbClient, userId, username) => {
     const uuid = (0, utils_1.extractUUID)(userId);
-    const { rows } = await dbClient.query("INSERT INTO users(id) VALUES($1) RETURNING *", [uuid]);
+    const { rows } = await dbClient.query("INSERT INTO users(id,username) VALUES($1,$2) RETURNING *", [uuid, username]);
     return rows;
 };
 exports.createDatabaseUser = createDatabaseUser;

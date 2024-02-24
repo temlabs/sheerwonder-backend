@@ -111,7 +111,7 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
     try {
         const res = await (0, signUp_1.signUp)(body);
         const dbClient = await server.pg.connect();
-        const dbUser = await (0, userFunctions_1.createDatabaseUser)(dbClient, res.userId);
+        const dbUser = await (0, userFunctions_1.createDatabaseUser)(dbClient, res.userId, body.username);
         dbClient.release();
         return Object.assign(Object.assign({}, res), { user: dbUser[0] });
     }

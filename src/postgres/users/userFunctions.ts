@@ -4,12 +4,13 @@ import { DBUser } from "../rowTypes";
 
 export const createDatabaseUser = async (
   dbClient: PoolClient,
-  userId: string
+  userId: string,
+  username: string
 ) => {
   const uuid = extractUUID(userId);
   const { rows } = await dbClient.query<DBUser>(
-    "INSERT INTO users(id) VALUES($1) RETURNING *",
-    [uuid]
+    "INSERT INTO users(id,username) VALUES($1,$2) RETURNING *",
+    [uuid, username]
   );
 
   return rows;

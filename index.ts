@@ -151,7 +151,11 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
   try {
     const res = await signUp(body);
     const dbClient = await server.pg.connect();
-    const dbUser = await createDatabaseUser(dbClient, res.userId);
+    const dbUser = await createDatabaseUser(
+      dbClient,
+      res.userId,
+      body.username
+    );
     dbClient.release();
     return { ...res, user: dbUser[0] };
   } catch (error) {
