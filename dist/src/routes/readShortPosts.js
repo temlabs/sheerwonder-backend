@@ -4,7 +4,7 @@ exports.readShortPostOptions = exports.readShortPostFilterSchema = void 0;
 const filterFunctions_1 = require("../postgres/filterFunctions");
 const filterTypes_1 = require("../postgres/filterTypes");
 const readShortPostFilterKeys = [
-    "user_id",
+    "created_by_user_id",
     "created_at_from",
     "created_at_to",
     "upvote_count_min",
@@ -17,7 +17,7 @@ const readShortPostFilterKeys = [
     "text",
 ];
 exports.readShortPostFilterSchema = {
-    user_id: {
+    created_by_user_id: {
         operation: filterTypes_1.FILTER_OPERATION.EQ,
         type: "string",
         dbColumn: "user_id",

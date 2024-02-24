@@ -3,7 +3,7 @@ import { FILTER_OPERATION, FilterSchema } from "../postgres/filterTypes";
 import { DBShortPost } from "../postgres/rowTypes";
 
 const readShortPostFilterKeys = [
-  "user_id",
+  "created_by_user_id",
   "created_at_from",
   "created_at_to",
   "upvote_count_min",
@@ -22,7 +22,7 @@ export const readShortPostFilterSchema: FilterSchema<
   DBShortPost,
   (typeof readShortPostFilterKeys)[number]
 > = {
-  user_id: {
+  created_by_user_id: {
     operation: FILTER_OPERATION.EQ,
     type: "string",
     dbColumn: "user_id",
