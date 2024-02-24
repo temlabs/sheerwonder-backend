@@ -70,14 +70,16 @@ server.get("/ping", async (request, reply) => {
 });
 
 server.get("/names", async (request, reply) => {
+  const dbClient = await server.pg.connect();
   try {
-    const dbClient = await server.pg.connect();
     const { rows } = await dbClient.query("SELECT * FROM test");
-    dbClient.release();
+
     return rows;
   } catch (err) {
     console.error(err);
     reply.status(500).send("Error querying the database");
+  } finally {
+    dbClient.release();
   }
 });
 
@@ -110,8 +112,8 @@ server.get<{ Querystring: GetUserSchema }>(
   "/user",
   getUserOptions,
   async (request, reply) => {
+    const dbClient = await server.pg.connect();
     try {
-      const dbClient = await server.pg.connect();
       const { userId = "" } = request.query;
       const users = await readDatabaseUser(dbClient, userId);
       if (users.length === 0) {
@@ -123,6 +125,8 @@ server.get<{ Querystring: GetUserSchema }>(
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
+    } finally {
+      dbClient.release();
     }
   }
 );
@@ -151,9 +155,9 @@ server.post("/login", loginOptions, async (request, reply) => {
 server.post("/signUp", signUpOptions, async (request, reply) => {
   const body: SignUpBodySchema = request.body as SignUpBodySchema;
 
+  const dbClient = await server.pg.connect();
   try {
     const res = await signUp(body);
-    const dbClient = await server.pg.connect();
     const dbUser = await createDatabaseUser(
       dbClient,
       res.userId,
@@ -172,6 +176,8 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
       return;
     }
     reply.status(500).send("Error querying the database");
+  } finally {
+    dbClient.release();
   }
 });
 
@@ -182,14 +188,16 @@ server.post(
     const body: CreateDBShortPostParams =
       request.body as CreateDBShortPostParams;
 
+    const dbClient = await server.pg.connect();
     try {
-      const dbClient = await server.pg.connect();
       const res = await createShortPost(dbClient, body);
       dbClient.release();
       return { ...res };
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
+    } finally {
+      dbClient.release();
     }
   }
 );
@@ -197,14 +205,16 @@ server.post(
 server.post("/createTrack", createTrackOptions, async (request, reply) => {
   const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
 
+  const dbClient = await server.pg.connect();
   try {
-    const dbClient = await server.pg.connect();
     const res = await createTrack(dbClient, body);
     dbClient.release();
     return { ...res[0] };
   } catch (error) {
     console.error(error);
     reply.status(500).send("Error querying the database");
+  } finally {
+    dbClient.release();
   }
 });
 
@@ -221,8 +231,8 @@ server.get<{
   delete filters.sort_by;
   delete filters.offset;
 
+  const dbClient = await server.pg.connect();
   try {
-    const dbClient = await server.pg.connect();
     const res = await readShortPosts(
       dbClient,
       filters,
@@ -235,6 +245,8 @@ server.get<{
   } catch (error) {
     console.error(error);
     reply.status(500).send("Error querying the database");
+  } finally {
+    dbClient.release();
   }
 });
 

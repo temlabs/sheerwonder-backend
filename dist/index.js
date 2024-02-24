@@ -41,15 +41,17 @@ server.get("/ping", async (request, reply) => {
     return "pong\n";
 });
 server.get("/names", async (request, reply) => {
+    const dbClient = await server.pg.connect();
     try {
-        const dbClient = await server.pg.connect();
         const { rows } = await dbClient.query("SELECT * FROM test");
-        dbClient.release();
         return rows;
     }
     catch (err) {
         console.error(err);
         reply.status(500).send("Error querying the database");
+    }
+    finally {
+        dbClient.release();
     }
 });
 server.get("/userExists", searchUsers_1.getUsersOptions, async (request, reply) => {
@@ -75,8 +77,8 @@ server.get("/userExists", searchUsers_1.getUsersOptions, async (request, reply) 
     }
 });
 server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
+    const dbClient = await server.pg.connect();
     try {
-        const dbClient = await server.pg.connect();
         const { userId = "" } = request.query;
         const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, userId);
         if (users.length === 0) {
@@ -88,6 +90,9 @@ server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
     catch (error) {
         console.error(error);
         reply.status(500).send("Error querying the database");
+    }
+    finally {
+        dbClient.release();
     }
 });
 server.post("/login", login_1.loginOptions, async (request, reply) => {
@@ -111,9 +116,9 @@ server.post("/login", login_1.loginOptions, async (request, reply) => {
 });
 server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
     const body = request.body;
+    const dbClient = await server.pg.connect();
     try {
         const res = await (0, signUp_1.signUp)(body);
-        const dbClient = await server.pg.connect();
         const dbUser = await (0, userFunctions_1.createDatabaseUser)(dbClient, res.userId, body.username);
         dbClient.release();
         return Object.assign(Object.assign({}, res), { user: dbUser[0] });
@@ -130,11 +135,14 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
         }
         reply.status(500).send("Error querying the database");
     }
+    finally {
+        dbClient.release();
+    }
 });
 server.post("/createShortPost", createShortPost_1.createShortPostOptions, async (request, reply) => {
     const body = request.body;
+    const dbClient = await server.pg.connect();
     try {
-        const dbClient = await server.pg.connect();
         const res = await (0, postFunctions_1.createShortPost)(dbClient, body);
         dbClient.release();
         return Object.assign({}, res);
@@ -143,11 +151,14 @@ server.post("/createShortPost", createShortPost_1.createShortPostOptions, async 
         console.error(error);
         reply.status(500).send("Error querying the database");
     }
+    finally {
+        dbClient.release();
+    }
 });
 server.post("/createTrack", createTrack_1.createTrackOptions, async (request, reply) => {
     const body = request.body;
+    const dbClient = await server.pg.connect();
     try {
-        const dbClient = await server.pg.connect();
         const res = await (0, trackFunctions_1.createTrack)(dbClient, body);
         dbClient.release();
         return Object.assign({}, res[0]);
@@ -155,6 +166,9 @@ server.post("/createTrack", createTrack_1.createTrackOptions, async (request, re
     catch (error) {
         console.error(error);
         reply.status(500).send("Error querying the database");
+    }
+    finally {
+        dbClient.release();
     }
 });
 server.get("/shortPosts", readShortPosts_1.readShortPostOptions, async (request, reply) => {
@@ -164,8 +178,8 @@ server.get("/shortPosts", readShortPosts_1.readShortPostOptions, async (request,
     const sortBy = filters.sort_by;
     delete filters.sort_by;
     delete filters.offset;
+    const dbClient = await server.pg.connect();
     try {
-        const dbClient = await server.pg.connect();
         const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset, sortBy);
         dbClient.release();
         return res;
@@ -173,6 +187,9 @@ server.get("/shortPosts", readShortPosts_1.readShortPostOptions, async (request,
     catch (error) {
         console.error(error);
         reply.status(500).send("Error querying the database");
+    }
+    finally {
+        dbClient.release();
     }
 });
 server.listen({
