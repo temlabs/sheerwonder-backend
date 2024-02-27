@@ -1,3 +1,4 @@
+import { extractUUID } from "../../utils";
 import { MAX_SESSION_TIME } from "../authConfig";
 import { createStytchClient } from "../authUtils";
 import {
@@ -29,18 +30,17 @@ export const login = async ({
   }
 
   try {
-    console.debug("authenticating with: ", {
-      email,
-      password,
-      MAX_SESSION_TIME,
-    });
     const res = await client.passwords.authenticate({
       email,
       password,
       session_duration_minutes: MAX_SESSION_TIME,
     });
 
-    return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
+    return {
+      sessionJwt: res.session_jwt,
+      sessionToken: res.session_token,
+      user_id: extractUUID(res.user_id),
+    };
   } catch (error) {
     throw error;
   }

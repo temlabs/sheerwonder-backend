@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginOptions = exports.login = void 0;
+const utils_1 = require("../../utils");
 const authConfig_1 = require("../authConfig");
 const authUtils_1 = require("../authUtils");
 const searchUsers_1 = require("./searchUsers");
@@ -20,17 +21,16 @@ const login = async ({ username, password, email: emailArg, }) => {
         email = resultFound ? user.results[0].emails[0].email : "";
     }
     try {
-        console.debug("authenticating with: ", {
-            email,
-            password,
-            MAX_SESSION_TIME: authConfig_1.MAX_SESSION_TIME,
-        });
         const res = await client.passwords.authenticate({
             email,
             password,
             session_duration_minutes: authConfig_1.MAX_SESSION_TIME,
         });
-        return { sessionJwt: res.session_jwt, sessionToken: res.session_token };
+        return {
+            sessionJwt: res.session_jwt,
+            sessionToken: res.session_token,
+            user_id: (0, utils_1.extractUUID)(res.user_id),
+        };
     }
     catch (error) {
         throw error;
