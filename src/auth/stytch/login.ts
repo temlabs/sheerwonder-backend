@@ -29,6 +29,11 @@ export const login = async ({
   }
 
   try {
+    console.debug("authenticating with: ", {
+      email,
+      password,
+      MAX_SESSION_TIME,
+    });
     const res = await client.passwords.authenticate({
       email,
       password,

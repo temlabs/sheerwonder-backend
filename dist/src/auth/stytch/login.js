@@ -20,6 +20,11 @@ const login = async ({ username, password, email: emailArg, }) => {
         email = resultFound ? user.results[0].emails[0].email : "";
     }
     try {
+        console.debug("authenticating with: ", {
+            email,
+            password,
+            MAX_SESSION_TIME: authConfig_1.MAX_SESSION_TIME,
+        });
         const res = await client.passwords.authenticate({
             email,
             password,
