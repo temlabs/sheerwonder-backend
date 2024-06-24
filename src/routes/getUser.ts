@@ -11,5 +11,5 @@ export const getUserOptions = {
 } as const;
 
 export interface GetUserSchema {
-  userId: string;
+  userId: number;
 }
