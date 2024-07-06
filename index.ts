@@ -1,10 +1,8 @@
 import fastify from "fastify";
 import fastifyPostgress from "@fastify/postgres";
 import {
-  GetUsersSchema,
   createdBeforeNowFilter,
   emailAddressAndNameFilter,
-  getUsersOptions,
   searchUsers,
 } from "./src/auth/stytch/searchUsers";
 import { LoginBodySchema, login, loginOptions } from "./src/auth/stytch/login";
@@ -61,6 +59,11 @@ import {
   cognitoConfirmSignUpErrorMap,
   cognitoConfirmSignUpErrorNames,
 } from "./src/auth/cognito/functions/confirmSignUp";
+import {
+  GetUsersSchema,
+  getUsersOptions,
+} from "./src/postgres/users/getUsers/getUserSchema";
+import { getUsers } from "./src/postgres/users/getUsers/getUsers";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -208,7 +211,6 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
       ConfirmSignUpRequestBody
     >(error, cognitoConfirmSignUpErrorNames, cognitoConfirmSignUpErrorMap);
     const errObj = error as Error;
-    console.debug("error", errObj);
     if (cognitoError) {
       reply.status(cognitoError.code).send({ error: cognitoError });
     } else {
@@ -223,35 +225,6 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
     dbClient && dbClient.release();
   }
 });
-
-// server.post("/signUp", signUpOptions, async (request, reply) => {
-//   const body: SignUpBodySchema = request.body as SignUpBodySchema;
-
-//   const dbClient = await server.pg.connect();
-//   try {
-//     const res = await signUp(body);
-//     const dbUser = await createDatabaseUser(
-//       dbClient,
-//       res.userId,
-//       body.username
-//     );
-//     dbClient.release();
-//     return { ...res, user: dbUser[0] };
-//   } catch (error) {
-//     console.error(error);
-//     if (error instanceof StytchError) {
-//       reply.status(error.status_code).send({
-//         message: error.error_message,
-//         name: error.name,
-//         type: error.error_type,
-//       });
-//       return;
-//     }
-//     reply.status(500).send("Error querying the database");
-//   } finally {
-//     dbClient.release();
-//   }
-// });
 
 server.get("/ping", async (request, reply) => {
   return "pong\n";
@@ -272,23 +245,19 @@ server.get("/names", async (request, reply) => {
 });
 
 server.get<{ Querystring: GetUsersSchema }>(
-  "/userExists",
+  "/users",
   getUsersOptions,
   async (request, reply) => {
     try {
-      const { email = "", username = "" } = request.query;
-      const { results: users } = await searchUsers([
-        createdBeforeNowFilter(),
-        ...emailAddressAndNameFilter({ email, username }),
-      ]);
-      if (users.length === 0) {
-        return false;
-      }
-      const user = users[0];
-      if (username) {
-        return user.name?.first_name === username.replaceAll("@", "");
-      }
-      return !!user;
+      const dbClient = await server.pg.connect();
+      const { email = "", username = "", displayName = "", id } = request.query;
+      const users = await getUsers(dbClient, {
+        email,
+        username,
+        displayName,
+        id,
+      });
+      reply.status(200).send(users);
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");

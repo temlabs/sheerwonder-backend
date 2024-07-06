@@ -54,21 +54,3 @@ export const emailAddressAndNameFilter = ({
   };
   return email ? [usernameFilter, emailFilter] : [usernameFilter];
 };
-
-export const getUsersOptions = {
-  schema: {
-    querystring: {
-      type: "object",
-      properties: {
-        email: { type: "string" },
-        username: { type: "string" },
-      },
-      required: [],
-    },
-  },
-} as const;
-
-export interface GetUsersSchema {
-  username?: string;
-  email?: string;
-}

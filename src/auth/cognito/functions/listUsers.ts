@@ -14,7 +14,6 @@ export async function listCognitoUsers(
     Limit: 10,
     UserPoolId: process.env.AWS_USER_POOL_ID,
   };
-  console.debug({ input });
   const command = new ListUsersCommand(input);
   const response = await client.send(command);
   return response;
