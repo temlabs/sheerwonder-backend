@@ -64,6 +64,8 @@ import {
   getUsersOptions,
 } from "./src/postgres/users/getUsers/getUserSchema";
 import { getUsers } from "./src/postgres/users/getUsers/getUsers";
+import { S3Client } from "@aws-sdk/client-s3";
+import { getAvatarUploadUrl } from "./src/postgres/users/getAvatarUploadUrl/getAvatarUploadUrl";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -78,7 +80,14 @@ if (process.env.NODE_ENV === "dev") {
   serverOptions = { https: credentials };
 }
 
-const awsClient = new CognitoIdentityProviderClient({
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -105,7 +114,7 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
   let dbClient: PoolClient | undefined;
 
   try {
-    const matchingUsers = await listCognitoUsers(awsClient, email);
+    const matchingUsers = await listCognitoUsers(cognitoClient, email);
 
     if (matchingUsers.Users && matchingUsers.Users?.length > 0) {
       reply.status(400).send({
@@ -115,7 +124,7 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
       });
     } else {
       dbClient = await server.pg.connect();
-      const awsSignUpResponse = await awsSignUp(awsClient, {
+      const awsSignUpResponse = await awsSignUp(cognitoClient, {
         email,
         password,
         username,
@@ -172,7 +181,7 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
   let dbClient: PoolClient | undefined;
   try {
     dbClient = await server.pg.connect();
-    await awsConfirmSignUp(awsClient, {
+    await awsConfirmSignUp(cognitoClient, {
       confirmationCode,
       username,
     });
@@ -224,6 +233,12 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
   } finally {
     dbClient && dbClient.release();
   }
+});
+
+server.get("/avatarUploadUrl", async (request, reply) => {
+  const userId = 0; // in future the user id info or some other will be contained in the header. or the auth token.
+  const url = await getAvatarUploadUrl(s3Client, userId);
+  reply.status(200).send(url);
 });
 
 server.get("/ping", async (request, reply) => {
