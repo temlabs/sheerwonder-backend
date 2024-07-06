@@ -66,6 +66,12 @@ import {
 import { getUsers } from "./src/postgres/users/getUsers/getUsers";
 import { S3Client } from "@aws-sdk/client-s3";
 import { getAvatarUploadUrl } from "./src/postgres/users/getAvatarUploadUrl/getAvatarUploadUrl";
+import {
+  EditUserBodySchema,
+  EditUserQueryStringSchema,
+  editUserOptions,
+} from "./src/postgres/users/editUser/editUserSchema";
+import { editUser } from "./src/postgres/users/editUser/editUser";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -263,8 +269,8 @@ server.get<{ Querystring: GetUsersSchema }>(
   "/users",
   getUsersOptions,
   async (request, reply) => {
+    const dbClient = await server.pg.connect();
     try {
-      const dbClient = await server.pg.connect();
       const { email = "", username = "", displayName = "", id } = request.query;
       const users = await getUsers(dbClient, {
         email,
@@ -276,9 +282,27 @@ server.get<{ Querystring: GetUsersSchema }>(
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
+    } finally {
+      dbClient.release();
     }
   }
 );
+
+server.patch<{
+  Querystring: EditUserQueryStringSchema;
+  Body: EditUserBodySchema;
+}>("/users", editUserOptions, async (request, reply) => {
+  const dbClient = await server.pg.connect();
+  try {
+    const body = request.body;
+    const { id } = request.query;
+    const updatedUser = await editUser(dbClient, id, body);
+    reply.status(200).send(updatedUser);
+  } catch (error) {
+  } finally {
+    dbClient.release();
+  }
+});
 
 server.get<{ Querystring: GetUserSchema }>(
   "/user",
