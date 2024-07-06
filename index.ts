@@ -1,21 +1,20 @@
 import fastify from "fastify";
 import fastifyPostgress from "@fastify/postgres";
 import {
-  GetUsersSchema,
   createdBeforeNowFilter,
   emailAddressAndNameFilter,
-  getUsersOptions,
   searchUsers,
 } from "./src/auth/stytch/searchUsers";
 import { LoginBodySchema, login, loginOptions } from "./src/auth/stytch/login";
 import { StytchError } from "stytch";
 import {
   SignUpBodySchema,
+  confirmSignUpOptions,
   signUp,
   signUpOptions,
 } from "./src/auth/stytch/signUp";
 import {
-  createDatabaseUser,
+  addUserToDatabase,
   readDatabaseUser,
 } from "./src/postgres/users/userFunctions";
 import {
@@ -38,6 +37,33 @@ import {
 } from "./src/routes/readShortPosts";
 import { SortBy } from "./src/postgres/filterTypes";
 import { GetUserSchema, getUserOptions } from "./src/routes/getUser";
+import { CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
+import { cognitoConfig } from "./src/auth/cognito/config";
+import {
+  CognitoSignUpErrorNames,
+  awsSignUp,
+  cognitoSignUpErrorMap,
+  cognitoSignUpErorrNames,
+} from "./src/auth/cognito/functions/signUp";
+import {
+  ConfirmSignUpRequestBody,
+  SignUpRequestBody,
+} from "./src/auth/authTypes";
+import { PoolClient } from "pg";
+import { User } from "./src/postgres/users/userTypes";
+import { getCognitoError } from "./src/auth/cognito/utils";
+import { listCognitoUsers } from "./src/auth/cognito/functions/listUsers";
+import {
+  CognitoConfirmSignUpErrorNames,
+  awsConfirmSignUp,
+  cognitoConfirmSignUpErrorMap,
+  cognitoConfirmSignUpErrorNames,
+} from "./src/auth/cognito/functions/confirmSignUp";
+import {
+  GetUsersSchema,
+  getUsersOptions,
+} from "./src/postgres/users/getUsers/getUserSchema";
+import { getUsers } from "./src/postgres/users/getUsers/getUsers";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -51,6 +77,15 @@ if (process.env.NODE_ENV === "dev") {
   const credentials = { key: privateKey, cert: certificate };
   serverOptions = { https: credentials };
 }
+
+const awsClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
 const server = fastify(serverOptions);
 
 const ser = fastify();
@@ -63,6 +98,132 @@ server.register(fastifyPostgress, {
 
 server.get("/", async (request, reply) => {
   return "hello world, what's good?!\n";
+});
+
+server.post("/signUp", signUpOptions, async (request, reply) => {
+  const { email, password, username } = request.body as SignUpRequestBody;
+  let dbClient: PoolClient | undefined;
+
+  try {
+    const matchingUsers = await listCognitoUsers(awsClient, email);
+
+    if (matchingUsers.Users && matchingUsers.Users?.length > 0) {
+      reply.status(400).send({
+        message: "A user with this email already exists",
+        code: 400,
+        field: "email",
+      });
+    } else {
+      dbClient = await server.pg.connect();
+      const awsSignUpResponse = await awsSignUp(awsClient, {
+        email,
+        password,
+        username,
+      });
+      const userSub = awsSignUpResponse.UserSub!;
+      const userRow = await addUserToDatabase(dbClient, {
+        username,
+        userSub,
+        email,
+      });
+      const {
+        id,
+        avatar_url,
+        bio,
+        display_name,
+        follower_count,
+        following_count,
+      } = userRow[0];
+      const userResponse: User = {
+        id,
+        bio: bio ?? undefined,
+        avatarUrl: avatar_url ?? undefined,
+        followerCount: follower_count,
+        followingCount: following_count,
+        displayName: display_name ?? "",
+        username,
+      };
+      reply.status(201).send(userResponse);
+    }
+  } catch (error) {
+    const cognitoError = getCognitoError<
+      CognitoSignUpErrorNames,
+      SignUpRequestBody
+    >(error, cognitoSignUpErorrNames, cognitoSignUpErrorMap);
+    const errObj = error as Error;
+    if (cognitoError) {
+      reply.status(cognitoError.code).send({ error: cognitoError });
+    } else {
+      reply.status(500).send({
+        error: {
+          message: "We're so sorry, there seems to be an error",
+          code: 500,
+        },
+      });
+    }
+  } finally {
+    dbClient && dbClient.release();
+  }
+});
+
+server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
+  const { confirmationCode, username } =
+    request.body as ConfirmSignUpRequestBody;
+  let dbClient: PoolClient | undefined;
+  try {
+    dbClient = await server.pg.connect();
+    await awsConfirmSignUp(awsClient, {
+      confirmationCode,
+      username,
+    });
+    const userRow = await readDatabaseUser(dbClient, { username });
+    if (!userRow || userRow.length === 0) {
+      reply.status(404).send({
+        error: {
+          code: 404,
+          message: "This user doesn't exist, please create another",
+          field: "confirmationCode",
+        },
+      });
+    } else {
+      const {
+        id,
+        avatar_url,
+        bio,
+        display_name,
+        follower_count,
+        following_count,
+      } = userRow[0];
+      const userResponse: User = {
+        id,
+        bio: bio ?? undefined,
+        avatarUrl: avatar_url ?? undefined,
+        followerCount: follower_count,
+        followingCount: following_count,
+        displayName: display_name ?? "",
+        username,
+      };
+      reply.status(201).send(userResponse);
+    }
+  } catch (error) {
+    const cognitoError = getCognitoError<
+      CognitoConfirmSignUpErrorNames,
+      ConfirmSignUpRequestBody
+    >(error, cognitoConfirmSignUpErrorNames, cognitoConfirmSignUpErrorMap);
+    const errObj = error as Error;
+    if (cognitoError) {
+      reply.status(cognitoError.code).send({ error: cognitoError });
+    } else {
+      reply.status(500).send({
+        error: {
+          message: "We're so sorry, there seems to be an error",
+          code: 500,
+        },
+      });
+    }
+  } finally {
+    dbClient && dbClient.release();
+  }
 });
 
 server.get("/ping", async (request, reply) => {
@@ -84,23 +245,19 @@ server.get("/names", async (request, reply) => {
 });
 
 server.get<{ Querystring: GetUsersSchema }>(
-  "/userExists",
+  "/users",
   getUsersOptions,
   async (request, reply) => {
     try {
-      const { email = "", username = "" } = request.query;
-      const { results: users } = await searchUsers([
-        createdBeforeNowFilter(),
-        ...emailAddressAndNameFilter({ email, username }),
-      ]);
-      if (users.length === 0) {
-        return false;
-      }
-      const user = users[0];
-      if (username) {
-        return user.name?.first_name === username.replaceAll("@", "");
-      }
-      return !!user;
+      const dbClient = await server.pg.connect();
+      const { email = "", username = "", displayName = "", id } = request.query;
+      const users = await getUsers(dbClient, {
+        email,
+        username,
+        displayName,
+        id,
+      });
+      reply.status(200).send(users);
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
@@ -114,8 +271,8 @@ server.get<{ Querystring: GetUserSchema }>(
   async (request, reply) => {
     const dbClient = await server.pg.connect();
     try {
-      const { userId = "" } = request.query;
-      const users = await readDatabaseUser(dbClient, userId);
+      const { userId = undefined } = request.query;
+      const users = await readDatabaseUser(dbClient, { id: userId });
       if (users.length === 0) {
         reply.status(404).send("User not found");
         return;
@@ -148,35 +305,6 @@ server.post("/login", loginOptions, async (request, reply) => {
       return;
     }
     reply.status(500).send("Error querying the database");
-  }
-});
-
-server.post("/signUp", signUpOptions, async (request, reply) => {
-  const body: SignUpBodySchema = request.body as SignUpBodySchema;
-
-  const dbClient = await server.pg.connect();
-  try {
-    const res = await signUp(body);
-    const dbUser = await createDatabaseUser(
-      dbClient,
-      res.userId,
-      body.username
-    );
-    dbClient.release();
-    return { ...res, user: dbUser[0] };
-  } catch (error) {
-    console.error(error);
-    if (error instanceof StytchError) {
-      reply.status(error.status_code).send({
-        message: error.error_message,
-        name: error.name,
-        type: error.error_type,
-      });
-      return;
-    }
-    reply.status(500).send("Error querying the database");
-  } finally {
-    dbClient.release();
   }
 });
 

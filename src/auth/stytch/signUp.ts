@@ -41,6 +41,20 @@ const signUpBodySchema = {
 export const signUpOptions = {
   schema: { body: signUpBodySchema },
 };
+
+const confirmSignUpBodySchema = {
+  type: "object",
+  required: ["username", "confirmationCode"],
+  properties: {
+    confirmationCode: { type: "string" },
+    username: { type: "string" },
+  },
+};
+
+export const confirmSignUpOptions = {
+  schema: { body: confirmSignUpBodySchema },
+};
+
 export interface SignUpBodySchema {
   username: string;
   password: string;

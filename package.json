@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.600.0",
     "@fastify/postgres": "^5.2.2",
     "dotenv": "^16.3.1",
     "fastify": "^4.25.2",
