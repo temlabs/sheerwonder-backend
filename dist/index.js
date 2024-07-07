@@ -107,6 +107,7 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
             reply.status(cognitoError.code).send({ error: cognitoError });
         }
         else {
+            console.error(error);
             reply.status(500).send({
                 error: {
                     message: "We're so sorry, there seems to be an error",
