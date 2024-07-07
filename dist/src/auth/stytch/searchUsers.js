@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUsersOptions = exports.emailAddressAndNameFilter = exports.createdBeforeNowFilter = exports.searchUsers = void 0;
+exports.emailAddressAndNameFilter = exports.createdBeforeNowFilter = exports.searchUsers = void 0;
 process.env.PORT;
 const stytch = __importStar(require("stytch"));
 const config_1 = require("../../config");
@@ -72,15 +72,3 @@ const emailAddressAndNameFilter = ({ email, username, }) => {
     return email ? [usernameFilter, emailFilter] : [usernameFilter];
 };
 exports.emailAddressAndNameFilter = emailAddressAndNameFilter;
-exports.getUsersOptions = {
-    schema: {
-        querystring: {
-            type: "object",
-            properties: {
-                email: { type: "string" },
-                username: { type: "string" },
-            },
-            required: [],
-        },
-    },
-};

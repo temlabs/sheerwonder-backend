@@ -1,16 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readDatabaseUser = exports.createDatabaseUser = void 0;
-const utils_1 = require("../../utils");
-const createDatabaseUser = async (dbClient, userId, username) => {
-    const uuid = (0, utils_1.extractUUID)(userId);
-    const { rows } = await dbClient.query("INSERT INTO users(id,username) VALUES($1,$2) RETURNING *", [uuid, username]);
+exports.readDatabaseUser = exports.addUserToDatabase = void 0;
+const addUserToDatabase = async (dbClient, { userSub, username, email }) => {
+    const { rows } = await dbClient.query("INSERT INTO users(username,email,user_sub) VALUES($1,$2,$3) RETURNING *", [username, email, userSub]);
     return rows;
 };
-exports.createDatabaseUser = createDatabaseUser;
-const readDatabaseUser = async (dbClient, userId) => {
-    const uuid = (0, utils_1.extractUUID)(userId);
-    const { rows } = await dbClient.query("SELECT * FROM users WHERE id =($1)", [uuid]);
+exports.addUserToDatabase = addUserToDatabase;
+const readDatabaseUser = async (dbClient, filter) => {
+    let queryString = "SELECT * FROM users WHERE 1=1";
+    const queryParams = [];
+    let paramIndex = 1;
+    if ((filter === null || filter === void 0 ? void 0 : filter.id) !== undefined) {
+        queryString += ` AND id = $${paramIndex}`;
+        queryParams.push(filter.id);
+        paramIndex++;
+    }
+    if (filter === null || filter === void 0 ? void 0 : filter.username) {
+        queryString += ` AND username = $${paramIndex}`;
+        queryParams.push(filter.username);
+        paramIndex++;
+    }
+    if (filter === null || filter === void 0 ? void 0 : filter.email) {
+        queryString += ` AND email = $${paramIndex}`;
+        queryParams.push(filter.email);
+        paramIndex++;
+    }
+    const { rows } = await dbClient.query(queryString, queryParams);
     return rows;
 };
 exports.readDatabaseUser = readDatabaseUser;

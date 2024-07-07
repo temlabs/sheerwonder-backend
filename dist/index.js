@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fastify_1 = __importDefault(require("fastify"));
 const postgres_1 = __importDefault(require("@fastify/postgres"));
-const searchUsers_1 = require("./src/auth/stytch/searchUsers");
 const login_1 = require("./src/auth/stytch/login");
 const stytch_1 = require("stytch");
 const signUp_1 = require("./src/auth/stytch/signUp");
@@ -16,6 +15,17 @@ const createTrack_1 = require("./src/routes/createTrack");
 const trackFunctions_1 = require("./src/postgres/tracks/trackFunctions");
 const readShortPosts_1 = require("./src/routes/readShortPosts");
 const getUser_1 = require("./src/routes/getUser");
+const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
+const signUp_2 = require("./src/auth/cognito/functions/signUp");
+const utils_1 = require("./src/auth/cognito/utils");
+const listUsers_1 = require("./src/auth/cognito/functions/listUsers");
+const confirmSignUp_1 = require("./src/auth/cognito/functions/confirmSignUp");
+const getUserSchema_1 = require("./src/postgres/users/getUsers/getUserSchema");
+const getUsers_1 = require("./src/postgres/users/getUsers/getUsers");
+const client_s3_1 = require("@aws-sdk/client-s3");
+const getAvatarUploadUrl_1 = require("./src/postgres/users/getAvatarUploadUrl/getAvatarUploadUrl");
+const editUserSchema_1 = require("./src/postgres/users/editUser/editUserSchema");
+const editUser_1 = require("./src/postgres/users/editUser/editUser");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -28,6 +38,20 @@ if (process.env.NODE_ENV === "dev") {
     const credentials = { key: privateKey, cert: certificate };
     serverOptions = { https: credentials };
 }
+const cognitoClient = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+});
+const s3Client = new client_s3_1.S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+});
 const server = (0, fastify_1.default)(serverOptions);
 const ser = (0, fastify_1.default)();
 const port = process.env.PORT || 3000;
@@ -36,6 +60,121 @@ server.register(postgres_1.default, {
 });
 server.get("/", async (request, reply) => {
     return "hello world, what's good?!\n";
+});
+server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
+    var _a;
+    const { email, password, username } = request.body;
+    let dbClient;
+    try {
+        const matchingUsers = await (0, listUsers_1.listCognitoUsers)(cognitoClient, email);
+        if (matchingUsers.Users && ((_a = matchingUsers.Users) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+            reply.status(400).send({
+                message: "A user with this email already exists",
+                code: 400,
+                field: "email",
+            });
+        }
+        else {
+            dbClient = await server.pg.connect();
+            const awsSignUpResponse = await (0, signUp_2.awsSignUp)(cognitoClient, {
+                email,
+                password,
+                username,
+            });
+            const userSub = awsSignUpResponse.UserSub;
+            const userRow = await (0, userFunctions_1.addUserToDatabase)(dbClient, {
+                username,
+                userSub,
+                email,
+            });
+            const { id, avatar_url, bio, display_name, follower_count, following_count, } = userRow[0];
+            const userResponse = {
+                id,
+                bio: bio !== null && bio !== void 0 ? bio : undefined,
+                avatarUrl: avatar_url !== null && avatar_url !== void 0 ? avatar_url : undefined,
+                followerCount: follower_count,
+                followingCount: following_count,
+                displayName: display_name !== null && display_name !== void 0 ? display_name : "",
+                username,
+            };
+            reply.status(201).send(userResponse);
+        }
+    }
+    catch (error) {
+        const cognitoError = (0, utils_1.getCognitoError)(error, signUp_2.cognitoSignUpErorrNames, signUp_2.cognitoSignUpErrorMap);
+        const errObj = error;
+        if (cognitoError) {
+            reply.status(cognitoError.code).send({ error: cognitoError });
+        }
+        else {
+            reply.status(500).send({
+                error: {
+                    message: "We're so sorry, there seems to be an error",
+                    code: 500,
+                },
+            });
+        }
+    }
+    finally {
+        dbClient && dbClient.release();
+    }
+});
+server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, reply) => {
+    const { confirmationCode, username } = request.body;
+    let dbClient;
+    try {
+        dbClient = await server.pg.connect();
+        await (0, confirmSignUp_1.awsConfirmSignUp)(cognitoClient, {
+            confirmationCode,
+            username,
+        });
+        const userRow = await (0, userFunctions_1.readDatabaseUser)(dbClient, { username });
+        if (!userRow || userRow.length === 0) {
+            reply.status(404).send({
+                error: {
+                    code: 404,
+                    message: "This user doesn't exist, please create another",
+                    field: "confirmationCode",
+                },
+            });
+        }
+        else {
+            const { id, avatar_url, bio, display_name, follower_count, following_count, } = userRow[0];
+            const userResponse = {
+                id,
+                bio: bio !== null && bio !== void 0 ? bio : undefined,
+                avatarUrl: avatar_url !== null && avatar_url !== void 0 ? avatar_url : undefined,
+                followerCount: follower_count,
+                followingCount: following_count,
+                displayName: display_name !== null && display_name !== void 0 ? display_name : "",
+                username,
+            };
+            reply.status(201).send(userResponse);
+        }
+    }
+    catch (error) {
+        const cognitoError = (0, utils_1.getCognitoError)(error, confirmSignUp_1.cognitoConfirmSignUpErrorNames, confirmSignUp_1.cognitoConfirmSignUpErrorMap);
+        const errObj = error;
+        if (cognitoError) {
+            reply.status(cognitoError.code).send({ error: cognitoError });
+        }
+        else {
+            reply.status(500).send({
+                error: {
+                    message: "We're so sorry, there seems to be an error",
+                    code: 500,
+                },
+            });
+        }
+    }
+    finally {
+        dbClient && dbClient.release();
+    }
+});
+server.get("/avatarUploadUrl", async (request, reply) => {
+    const userId = 0; // in future the user id info or some other will be contained in the header. or the auth token.
+    const url = await (0, getAvatarUploadUrl_1.getAvatarUploadUrl)(s3Client, userId);
+    reply.status(200).send(url);
 });
 server.get("/ping", async (request, reply) => {
     return "pong\n";
@@ -54,33 +193,45 @@ server.get("/names", async (request, reply) => {
         dbClient.release();
     }
 });
-server.get("/userExists", searchUsers_1.getUsersOptions, async (request, reply) => {
-    var _a;
+server.get("/users", getUserSchema_1.getUsersOptions, async (request, reply) => {
+    const dbClient = await server.pg.connect();
     try {
-        const { email = "", username = "" } = request.query;
-        const { results: users } = await (0, searchUsers_1.searchUsers)([
-            (0, searchUsers_1.createdBeforeNowFilter)(),
-            ...(0, searchUsers_1.emailAddressAndNameFilter)({ email, username }),
-        ]);
-        if (users.length === 0) {
-            return false;
-        }
-        const user = users[0];
-        if (username) {
-            return ((_a = user.name) === null || _a === void 0 ? void 0 : _a.first_name) === username.replaceAll("@", "");
-        }
-        return !!user;
+        const { email = "", username = "", displayName = "", id } = request.query;
+        const users = await (0, getUsers_1.getUsers)(dbClient, {
+            email,
+            username,
+            displayName,
+            id,
+        });
+        reply.status(200).send(users);
     }
     catch (error) {
         console.error(error);
         reply.status(500).send("Error querying the database");
     }
+    finally {
+        dbClient.release();
+    }
+});
+server.patch("/users", editUserSchema_1.editUserOptions, async (request, reply) => {
+    const dbClient = await server.pg.connect();
+    try {
+        const body = request.body;
+        const { id } = request.query;
+        const updatedUser = await (0, editUser_1.editUser)(dbClient, id, body);
+        reply.status(200).send(updatedUser);
+    }
+    catch (error) {
+    }
+    finally {
+        dbClient.release();
+    }
 });
 server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
     const dbClient = await server.pg.connect();
     try {
-        const { userId = "" } = request.query;
-        const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, userId);
+        const { userId = undefined } = request.query;
+        const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, { id: userId });
         if (users.length === 0) {
             reply.status(404).send("User not found");
             return;
@@ -112,31 +263,6 @@ server.post("/login", login_1.loginOptions, async (request, reply) => {
             return;
         }
         reply.status(500).send("Error querying the database");
-    }
-});
-server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
-    const body = request.body;
-    const dbClient = await server.pg.connect();
-    try {
-        const res = await (0, signUp_1.signUp)(body);
-        const dbUser = await (0, userFunctions_1.createDatabaseUser)(dbClient, res.userId, body.username);
-        dbClient.release();
-        return Object.assign(Object.assign({}, res), { user: dbUser[0] });
-    }
-    catch (error) {
-        console.error(error);
-        if (error instanceof stytch_1.StytchError) {
-            reply.status(error.status_code).send({
-                message: error.error_message,
-                name: error.name,
-                type: error.error_type,
-            });
-            return;
-        }
-        reply.status(500).send("Error querying the database");
-    }
-    finally {
-        dbClient.release();
     }
 });
 server.post("/createShortPost", createShortPost_1.createShortPostOptions, async (request, reply) => {

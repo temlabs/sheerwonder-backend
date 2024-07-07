@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.signUpOptions = exports.signUp = void 0;
+exports.confirmSignUpOptions = exports.signUpOptions = exports.signUp = void 0;
 const authConfig_1 = require("../authConfig");
 const authUtils_1 = require("../authUtils");
 const signUp = async ({ username, password, email, }) => {
@@ -36,4 +36,15 @@ const signUpBodySchema = {
 };
 exports.signUpOptions = {
     schema: { body: signUpBodySchema },
+};
+const confirmSignUpBodySchema = {
+    type: "object",
+    required: ["username", "confirmationCode"],
+    properties: {
+        confirmationCode: { type: "string" },
+        username: { type: "string" },
+    },
+};
+exports.confirmSignUpOptions = {
+    schema: { body: confirmSignUpBodySchema },
 };
