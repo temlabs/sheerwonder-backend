@@ -28,7 +28,7 @@ export const readDatabaseUser = async (
   filter: Filter = {}
 ): Promise<User[]> => {
   const [whereClause, values] = createFilterQuery(filter);
-  const query = `SELECT id, username, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
+  const query = `SELECT id, username, bio, display_name AS "displayName", follower_count AS "followerCount", following_count as "followingCount", avatar_url AS "avatarUrl" FROM users ${whereClause}`;
   const { rows } = await dbClient.query<User>(query, values);
   return rows;
 };
