@@ -174,13 +174,28 @@ server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, rep
     }
 });
 server.get("/avatarUploadUrl", { preHandler: server.authenticate() }, async (request, reply) => {
-    const dbClient = await server.pg.connect();
-    const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
-    const userId = user.id;
-    console.debug("upload URL got user id: ", userId);
-    const url = await (0, getAvatarUploadUrl_1.getAvatarUploadUrl)(s3Client, userId);
-    console.debug("upload URL got upload url: ", url);
-    reply.status(200).send(url);
+    let dbClient;
+    try {
+        dbClient = await server.pg.connect();
+        const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
+        const userId = user.id;
+        console.debug("upload URL got user id: ", userId);
+        const url = await (0, getAvatarUploadUrl_1.getAvatarUploadUrl)(s3Client, userId);
+        console.debug("upload URL got upload url: ", url);
+        reply.header("Content-Type", "application/json");
+        reply.status(200).send({ url });
+    }
+    catch (error) {
+        reply.status(500).send({
+            error: {
+                message: "We're so sorry, there seems to be an error",
+                code: 500,
+            },
+        });
+    }
+    finally {
+        dbClient && dbClient.release();
+    }
 });
 server.get("/ping", async (request, reply) => {
     return "pong\n";

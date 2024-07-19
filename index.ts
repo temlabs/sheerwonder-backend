@@ -249,16 +249,30 @@ server.get(
   "/avatarUploadUrl",
   { preHandler: server.authenticate() },
   async (request, reply) => {
-    const dbClient = await server.pg.connect();
-    const user = (
-      await readDatabaseUser(dbClient, { user_sub: request.user.sub })
-    )[0];
+    let dbClient;
 
-    const userId = user.id;
-    console.debug("upload URL got user id: ", userId);
-    const url = await getAvatarUploadUrl(s3Client, userId);
-    console.debug("upload URL got upload url: ", url);
-    reply.status(200).send(url);
+    try {
+      dbClient = await server.pg.connect();
+      const user = (
+        await readDatabaseUser(dbClient, { user_sub: request.user.sub })
+      )[0];
+
+      const userId = user.id;
+      console.debug("upload URL got user id: ", userId);
+      const url = await getAvatarUploadUrl(s3Client, userId);
+      console.debug("upload URL got upload url: ", url);
+      reply.header("Content-Type", "application/json");
+      reply.status(200).send({ url });
+    } catch (error) {
+      reply.status(500).send({
+        error: {
+          message: "We're so sorry, there seems to be an error",
+          code: 500,
+        },
+      });
+    } finally {
+      dbClient && dbClient.release();
+    }
   }
 );
 
