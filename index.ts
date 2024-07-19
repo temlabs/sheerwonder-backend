@@ -307,6 +307,8 @@ server.patch<{
       const updatedUser = ((await editUser(dbClient, id, body)) as User[])[0];
       reply.status(200).send(updatedUser);
     } catch (error) {
+      console.error(error);
+      reply.status(500).send("Error querying the database");
     } finally {
       dbClient.release();
     }
