@@ -245,11 +245,22 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
   }
 });
 
-server.get("/avatarUploadUrl", async (request, reply) => {
-  const userId = 0; // in future the user id info or some other will be contained in the header. or the auth token.
-  const url = await getAvatarUploadUrl(s3Client, userId);
-  reply.status(200).send(url);
-});
+server.get(
+  "/avatarUploadUrl",
+  { preHandler: server.authenticate() },
+  async (request, reply) => {
+    const dbClient = await server.pg.connect();
+    const user = (
+      await readDatabaseUser(dbClient, { user_sub: request.user.sub })
+    )[0];
+
+    const userId = user.id;
+    console.debug("upload URL got user id: ", userId);
+    const url = await getAvatarUploadUrl(s3Client, userId);
+    console.debug("upload URL got upload url: ", url);
+    reply.status(200).send(url);
+  }
+);
 
 server.get("/ping", async (request, reply) => {
   return "pong\n";

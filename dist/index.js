@@ -173,9 +173,13 @@ server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, rep
         dbClient && dbClient.release();
     }
 });
-server.get("/avatarUploadUrl", async (request, reply) => {
-    const userId = 0; // in future the user id info or some other will be contained in the header. or the auth token.
+server.get("/avatarUploadUrl", { preHandler: server.authenticate() }, async (request, reply) => {
+    const dbClient = await server.pg.connect();
+    const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
+    const userId = user.id;
+    console.debug("upload URL got user id: ", userId);
     const url = await (0, getAvatarUploadUrl_1.getAvatarUploadUrl)(s3Client, userId);
+    console.debug("upload URL got upload url: ", url);
     reply.status(200).send(url);
 });
 server.get("/ping", async (request, reply) => {
