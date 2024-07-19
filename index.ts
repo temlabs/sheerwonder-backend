@@ -304,7 +304,7 @@ server.patch<{
     try {
       const body = request.body;
       const { id } = request.query;
-      const updatedUser = await editUser(dbClient, id, body);
+      const updatedUser = ((await editUser(dbClient, id, body)) as User[])[0];
       reply.status(200).send(updatedUser);
     } catch (error) {
     } finally {

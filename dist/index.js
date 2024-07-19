@@ -221,7 +221,7 @@ server.patch("/user", Object.assign(Object.assign({}, editUserSchema_1.editUserO
     try {
         const body = request.body;
         const { id } = request.query;
-        const updatedUser = await (0, editUser_1.editUser)(dbClient, id, body);
+        const updatedUser = (await (0, editUser_1.editUser)(dbClient, id, body))[0];
         reply.status(200).send(updatedUser);
     }
     catch (error) {
