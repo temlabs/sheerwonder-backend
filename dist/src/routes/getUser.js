@@ -8,7 +8,7 @@ exports.getUserOptions = {
             properties: {
                 userId: { type: "string" },
             },
-            required: ["userId"],
+            // required: ["userId"],
         },
     },
 };

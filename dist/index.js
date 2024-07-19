@@ -26,6 +26,7 @@ const client_s3_1 = require("@aws-sdk/client-s3");
 const getAvatarUploadUrl_1 = require("./src/postgres/users/getAvatarUploadUrl/getAvatarUploadUrl");
 const editUserSchema_1 = require("./src/postgres/users/editUser/editUserSchema");
 const editUser_1 = require("./src/postgres/users/editUser/editUser");
+const cognitoAuthDecorator_1 = __importDefault(require("./src/auth/cognito/decorators/cognitoAuthDecorator"));
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -53,11 +54,11 @@ const s3Client = new client_s3_1.S3Client({
     },
 });
 const server = (0, fastify_1.default)(serverOptions);
-const ser = (0, fastify_1.default)();
 const port = process.env.PORT || 3000;
 server.register(postgres_1.default, {
     connectionString: process.env.DATABASE_URL,
 });
+server.decorate("authenticate", cognitoAuthDecorator_1.default);
 server.get("/", async (request, reply) => {
     return "hello world, what's good?!\n";
 });
@@ -81,10 +82,10 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
                 password,
                 username,
             });
-            const userSub = awsSignUpResponse.UserSub;
+            const user_sub = awsSignUpResponse.UserSub;
             const userRow = await (0, userFunctions_1.addUserToDatabase)(dbClient, {
                 username,
-                userSub,
+                user_sub,
                 email,
             });
             const { id, avatar_url, bio, display_name, follower_count, following_count, } = userRow[0];
@@ -214,7 +215,8 @@ server.get("/users", getUserSchema_1.getUsersOptions, async (request, reply) => 
         dbClient.release();
     }
 });
-server.patch("/users", editUserSchema_1.editUserOptions, async (request, reply) => {
+server.patch("/user", Object.assign(Object.assign({}, editUserSchema_1.editUserOptions), { preHandler: server.authenticate() }), async (request, reply) => {
+    const sub = request.user.sub;
     const dbClient = await server.pg.connect();
     try {
         const body = request.body;
@@ -228,11 +230,13 @@ server.patch("/users", editUserSchema_1.editUserOptions, async (request, reply) 
         dbClient.release();
     }
 });
-server.get("/user", getUser_1.getUserOptions, async (request, reply) => {
+server.get("/user", Object.assign(Object.assign({}, getUser_1.getUserOptions), { preHandler: server.authenticate() }), async (request, reply) => {
+    var _a;
+    const user_sub = (_a = request.user) === null || _a === void 0 ? void 0 : _a.sub;
     const dbClient = await server.pg.connect();
     try {
         const { userId = undefined } = request.query;
-        const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, { id: userId });
+        const users = await (0, userFunctions_1.readDatabaseUser)(dbClient, { id: userId, user_sub });
         if (users.length === 0) {
             reply.status(404).send("User not found");
             return;
