@@ -1,50 +1,33 @@
 import { PoolClient } from "pg";
 import { extractUUID } from "../../utils";
 import { DBUser } from "../rowTypes";
+import { createFilterQuery } from "../utils";
 
-interface NewUserDetails {
-  username: string;
-  userSub: string;
-  email: string;
-}
+type Filter =
+  | {
+      username?: string;
+      user_sub?: string;
+      email?: string;
+    }
+  | Record<string, string | number | boolean | Date>;
 
 export const addUserToDatabase = async (
   dbClient: PoolClient,
-  { userSub, username, email }: NewUserDetails
+  { user_sub, username, email }: Filter
 ) => {
   const { rows } = await dbClient.query<DBUser>(
     "INSERT INTO users(username,email,user_sub) VALUES($1,$2,$3) RETURNING *",
-    [username, email, userSub]
+    [username, email, user_sub]
   );
   return rows;
 };
 
 export const readDatabaseUser = async (
   dbClient: PoolClient,
-  filter?: { id?: number; username?: string; email?: string }
-) => {
-  let queryString = "SELECT * FROM users WHERE 1=1";
-  const queryParams: (number | string)[] = [];
-  let paramIndex = 1;
-
-  if (filter?.id !== undefined) {
-    queryString += ` AND id = $${paramIndex}`;
-    queryParams.push(filter.id);
-    paramIndex++;
-  }
-
-  if (filter?.username) {
-    queryString += ` AND username = $${paramIndex}`;
-    queryParams.push(filter.username);
-    paramIndex++;
-  }
-
-  if (filter?.email) {
-    queryString += ` AND email = $${paramIndex}`;
-    queryParams.push(filter.email);
-    paramIndex++;
-  }
-
-  const { rows } = await dbClient.query<DBUser>(queryString, queryParams);
+  filter: Filter = {}
+): Promise<DBUser[]> => {
+  const [whereClause, values] = createFilterQuery(filter);
+  const query = `SELECT id, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
+  const { rows } = await dbClient.query<DBUser>(query, values);
   return rows;
 };

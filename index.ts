@@ -72,6 +72,7 @@ import {
   editUserOptions,
 } from "./src/postgres/users/editUser/editUserSchema";
 import { editUser } from "./src/postgres/users/editUser/editUser";
+import cognitoAuthDecorator from "./src/auth/cognito/decorators/cognitoAuthDecorator";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -101,15 +102,23 @@ const s3Client = new S3Client({
   },
 });
 
-const server = fastify(serverOptions);
+declare module "fastify" {
+  interface FastifyRequest {
+    user: {
+      sub: string;
+      email: string;
+    };
+  }
+}
 
-const ser = fastify();
+const server = fastify(serverOptions);
 
 const port = (process.env.PORT as unknown as number) || 3000;
 
 server.register(fastifyPostgress, {
   connectionString: process.env.DATABASE_URL,
 });
+server.decorate("authenticate", cognitoAuthDecorator);
 
 server.get("/", async (request, reply) => {
   return "hello world, what's good?!\n";
@@ -135,10 +144,10 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
         password,
         username,
       });
-      const userSub = awsSignUpResponse.UserSub!;
+      const user_sub = awsSignUpResponse.UserSub!;
       const userRow = await addUserToDatabase(dbClient, {
         username,
-        userSub,
+        user_sub,
         email,
       });
       const {
@@ -292,27 +301,33 @@ server.get<{ Querystring: GetUsersSchema }>(
 server.patch<{
   Querystring: EditUserQueryStringSchema;
   Body: EditUserBodySchema;
-}>("/users", editUserOptions, async (request, reply) => {
-  const dbClient = await server.pg.connect();
-  try {
-    const body = request.body;
-    const { id } = request.query;
-    const updatedUser = await editUser(dbClient, id, body);
-    reply.status(200).send(updatedUser);
-  } catch (error) {
-  } finally {
-    dbClient.release();
+}>(
+  "/user",
+  { ...editUserOptions, preHandler: server.authenticate() },
+  async (request, reply) => {
+    const sub = request.user.sub;
+    const dbClient = await server.pg.connect();
+    try {
+      const body = request.body;
+      const { id } = request.query;
+      const updatedUser = await editUser(dbClient, id, body);
+      reply.status(200).send(updatedUser);
+    } catch (error) {
+    } finally {
+      dbClient.release();
+    }
   }
-});
+);
 
 server.get<{ Querystring: GetUserSchema }>(
   "/user",
-  getUserOptions,
+  { ...getUserOptions, preHandler: server.authenticate() },
   async (request, reply) => {
+    const user_sub = request.user?.sub;
     const dbClient = await server.pg.connect();
     try {
       const { userId = undefined } = request.query;
-      const users = await readDatabaseUser(dbClient, { id: userId });
+      const users = await readDatabaseUser(dbClient, { id: userId, user_sub });
       if (users.length === 0) {
         reply.status(404).send("User not found");
         return;
