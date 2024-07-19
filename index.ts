@@ -211,21 +211,15 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
         },
       });
     } else {
-      const {
-        id,
-        avatar_url,
-        bio,
-        display_name,
-        follower_count,
-        following_count,
-      } = userRow[0];
+      const { id, avatarUrl, bio, displayName, followerCount, followingCount } =
+        userRow[0];
       const userResponse: User = {
         id,
         bio: bio ?? undefined,
-        avatarUrl: avatar_url ?? undefined,
-        followerCount: follower_count,
-        followingCount: following_count,
-        displayName: display_name ?? "",
+        avatarUrl: avatarUrl ?? undefined,
+        followerCount: followerCount,
+        followingCount: followingCount,
+        displayName: displayName ?? "",
         username,
       };
       reply.status(201).send(userResponse);

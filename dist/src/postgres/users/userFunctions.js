@@ -9,7 +9,7 @@ const addUserToDatabase = async (dbClient, { user_sub, username, email }) => {
 exports.addUserToDatabase = addUserToDatabase;
 const readDatabaseUser = async (dbClient, filter = {}) => {
     const [whereClause, values] = (0, utils_1.createFilterQuery)(filter);
-    const query = `SELECT id, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
+    const query = `SELECT id, username, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
     const { rows } = await dbClient.query(query, values);
     return rows;
 };

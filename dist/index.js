@@ -141,14 +141,14 @@ server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, rep
             });
         }
         else {
-            const { id, avatar_url, bio, display_name, follower_count, following_count, } = userRow[0];
+            const { id, avatarUrl, bio, displayName, followerCount, followingCount } = userRow[0];
             const userResponse = {
                 id,
                 bio: bio !== null && bio !== void 0 ? bio : undefined,
-                avatarUrl: avatar_url !== null && avatar_url !== void 0 ? avatar_url : undefined,
-                followerCount: follower_count,
-                followingCount: following_count,
-                displayName: display_name !== null && display_name !== void 0 ? display_name : "",
+                avatarUrl: avatarUrl !== null && avatarUrl !== void 0 ? avatarUrl : undefined,
+                followerCount: followerCount,
+                followingCount: followingCount,
+                displayName: displayName !== null && displayName !== void 0 ? displayName : "",
                 username,
             };
             reply.status(201).send(userResponse);

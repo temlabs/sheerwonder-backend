@@ -2,6 +2,7 @@ import { PoolClient } from "pg";
 import { extractUUID } from "../../utils";
 import { DBUser } from "../rowTypes";
 import { createFilterQuery } from "../utils";
+import { User } from "./userTypes";
 
 type Filter =
   | {
@@ -25,9 +26,9 @@ export const addUserToDatabase = async (
 export const readDatabaseUser = async (
   dbClient: PoolClient,
   filter: Filter = {}
-): Promise<DBUser[]> => {
+): Promise<User[]> => {
   const [whereClause, values] = createFilterQuery(filter);
-  const query = `SELECT id, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
-  const { rows } = await dbClient.query<DBUser>(query, values);
+  const query = `SELECT id, username, bio, display_name AS displayName, follower_count AS followerCount, following_count as followingCount, avatar_url AS avatarUrl FROM users ${whereClause}`;
+  const { rows } = await dbClient.query<User>(query, values);
   return rows;
 };
