@@ -7,12 +7,14 @@ export const createShortPost = async (
   dbClient: PoolClient,
   shortPost: CreateShortPostBody & { userId: number }
 ) => {
+  console.debug("creating short post: ", shortPost);
   const track = shortPost.track;
   const trackRows = await createTrack(dbClient, track);
   if (trackRows.length === 0) {
     throw "track was not created";
   }
   const createdTrack = trackRows[0];
+  console.debug("created track: ", createdTrack);
   const query = `
       WITH inserted_post AS (
         INSERT INTO short_posts (user_id, text, track_id, time_in, time_out, ext_id)
