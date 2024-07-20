@@ -3,14 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createShortPost = void 0;
 const createTrack_1 = require("../../tracks/createTrack");
 const createShortPost = async (dbClient, shortPost) => {
-    console.debug("creating short post: ", shortPost);
     const track = shortPost.track;
     const trackRows = await (0, createTrack_1.createTrack)(dbClient, track);
     if (trackRows.length === 0) {
         throw "track was not created";
     }
     const createdTrack = trackRows[0];
-    console.debug("created track: ", createdTrack);
     const query = `
   WITH inserted_post AS (
     INSERT INTO short_posts (user_id, text, track_id, time_in, time_out, ext_id)

@@ -395,6 +395,8 @@ server.post<{ Body: CreateShortPostBody }>(
       )[0];
       const userId = user.id;
       const res = await createShortPost(dbClient, { ...body, userId });
+      reply.header("Content-Type", "application/json");
+      console.debug("sending res: ", { ...res });
       reply.status(201).send({ ...res });
     } catch (error) {
       console.error(error);

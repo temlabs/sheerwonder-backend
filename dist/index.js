@@ -298,6 +298,8 @@ server.post("/shortPost", Object.assign(Object.assign({}, createShortPost_1.crea
         const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
         const userId = user.id;
         const res = await (0, createShortPost_2.createShortPost)(dbClient, Object.assign(Object.assign({}, body), { userId }));
+        reply.header("Content-Type", "application/json");
+        console.debug("sending res: ", Object.assign({}, res));
         reply.status(201).send(Object.assign({}, res));
     }
     catch (error) {
