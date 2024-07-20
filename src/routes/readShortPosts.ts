@@ -24,7 +24,7 @@ export const readShortPostFilterSchema: FilterSchema<
 > = {
   created_by_user_id: {
     operation: FILTER_OPERATION.EQ,
-    type: "string",
+    type: "number",
     dbColumn: "user_id",
   },
   created_at_from: {

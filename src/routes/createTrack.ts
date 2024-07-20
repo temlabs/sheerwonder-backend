@@ -2,12 +2,12 @@ import { DBTrack } from "../postgres/rowTypes";
 
 const createTrackBodySchema = {
   type: "object",
-  required: ["artist", "spotify_id", "duration", "name"],
+  required: ["artist", "spotifyId", "duration", "name", "artwork"],
   properties: {
     artist: { type: "string" },
     artwork: { type: "string" },
     name: { type: "string" },
-    spotify_id: {
+    spotifyId: {
       type: "string",
     },
   },

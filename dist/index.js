@@ -11,8 +11,6 @@ const signUp_1 = require("./src/auth/stytch/signUp");
 const userFunctions_1 = require("./src/postgres/users/userFunctions");
 const createShortPost_1 = require("./src/routes/createShortPost");
 const postFunctions_1 = require("./src/postgres/shortPosts/postFunctions");
-const createTrack_1 = require("./src/routes/createTrack");
-const trackFunctions_1 = require("./src/postgres/tracks/trackFunctions");
 const readShortPosts_1 = require("./src/routes/readShortPosts");
 const getUser_1 = require("./src/routes/getUser");
 const client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
@@ -27,6 +25,7 @@ const getAvatarUploadUrl_1 = require("./src/postgres/users/getAvatarUploadUrl/ge
 const editUserSchema_1 = require("./src/postgres/users/editUser/editUserSchema");
 const editUser_1 = require("./src/postgres/users/editUser/editUser");
 const cognitoAuthDecorator_1 = __importDefault(require("./src/auth/cognito/decorators/cognitoAuthDecorator"));
+const createShortPost_2 = require("./src/postgres/shortPosts/createShortPost/createShortPost");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -291,48 +290,49 @@ server.post("/login", login_1.loginOptions, async (request, reply) => {
         reply.status(500).send("Error querying the database");
     }
 });
-server.post("/createShortPost", createShortPost_1.createShortPostOptions, async (request, reply) => {
+server.post("/shortPost", Object.assign(Object.assign({}, createShortPost_1.createShortPostOptions), { preHandler: server.authenticate() }), async (request, reply) => {
     const body = request.body;
-    const dbClient = await server.pg.connect();
+    let dbClient;
     try {
-        const res = await (0, postFunctions_1.createShortPost)(dbClient, body);
-        dbClient.release();
-        return Object.assign({}, res);
+        dbClient = await server.pg.connect();
+        const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
+        const userId = user.id;
+        const res = await (0, createShortPost_2.createShortPost)(dbClient, Object.assign(Object.assign({}, body), { userId }));
+        reply.status(201).send(Object.assign({}, res));
     }
     catch (error) {
         console.error(error);
         reply.status(500).send("Error querying the database");
     }
     finally {
-        dbClient.release();
+        dbClient && dbClient.release();
     }
 });
-server.post("/createTrack", createTrack_1.createTrackOptions, async (request, reply) => {
-    const body = request.body;
-    const dbClient = await server.pg.connect();
-    try {
-        const res = await (0, trackFunctions_1.createTrack)(dbClient, body);
-        dbClient.release();
-        return Object.assign({}, res[0]);
-    }
-    catch (error) {
-        console.error(error);
-        reply.status(500).send("Error querying the database");
-    }
-    finally {
-        dbClient.release();
-    }
-});
-server.get("/shortPosts", readShortPosts_1.readShortPostOptions, async (request, reply) => {
+// server.post("/createTrack", createTrackOptions, async (request, reply) => {
+//   const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
+//   const dbClient = await server.pg.connect();
+//   try {
+//     const res = await createTrack(dbClient, body);
+//     dbClient.release();
+//     return { ...res[0] };
+//   } catch (error) {
+//     console.error(error);
+//     reply.status(500).send("Error querying the database");
+//   } finally {
+//     dbClient.release();
+//   }
+// });
+server.get("/shortPost", readShortPosts_1.readShortPostOptions, async (request, reply) => {
     // console.debug(readShortPostOptions);
     const filters = request.query;
     const offset = filters.offset;
     const sortBy = filters.sort_by;
+    const limit = filters.limit;
     delete filters.sort_by;
     delete filters.offset;
     const dbClient = await server.pg.connect();
     try {
-        const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset, sortBy);
+        const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset === null || offset === void 0 ? void 0 : offset.toString(), limit === null || limit === void 0 ? void 0 : limit.toString(), sortBy);
         return res;
     }
     catch (error) {

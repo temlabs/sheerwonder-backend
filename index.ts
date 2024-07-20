@@ -21,15 +21,11 @@ import {
   CreateDBShortPostParams,
   createShortPostOptions,
 } from "./src/routes/createShortPost";
-import {
-  createShortPost,
-  readShortPosts,
-} from "./src/postgres/shortPosts/postFunctions";
+import { readShortPosts } from "./src/postgres/shortPosts/postFunctions";
 import {
   CreateDBTrackParams,
   createTrackOptions,
 } from "./src/routes/createTrack";
-import { createTrack } from "./src/postgres/tracks/trackFunctions";
 import {
   ReadShortPostQueryStringParams,
   readShortPostFilterSchema,
@@ -73,6 +69,8 @@ import {
 } from "./src/postgres/users/editUser/editUserSchema";
 import { editUser } from "./src/postgres/users/editUser/editUser";
 import cognitoAuthDecorator from "./src/auth/cognito/decorators/cognitoAuthDecorator";
+import { CreateShortPostBody } from "./src/postgres/shortPosts/shortPostTypes";
+import { createShortPost } from "./src/postgres/shortPosts/createShortPost/createShortPost";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -384,53 +382,57 @@ server.post("/login", loginOptions, async (request, reply) => {
   }
 });
 
-server.post(
-  "/createShortPost",
-  createShortPostOptions,
+server.post<{ Body: CreateShortPostBody }>(
+  "/shortPost",
+  { ...createShortPostOptions, preHandler: server.authenticate() },
   async (request, reply) => {
-    const body: CreateDBShortPostParams =
-      request.body as CreateDBShortPostParams;
-
-    const dbClient = await server.pg.connect();
+    const body = request.body;
+    let dbClient;
     try {
-      const res = await createShortPost(dbClient, body);
-      dbClient.release();
-      return { ...res };
+      dbClient = await server.pg.connect();
+      const user = (
+        await readDatabaseUser(dbClient, { user_sub: request.user.sub })
+      )[0];
+      const userId = user.id;
+      const res = await createShortPost(dbClient, { ...body, userId });
+      reply.status(201).send({ ...res });
     } catch (error) {
       console.error(error);
       reply.status(500).send("Error querying the database");
     } finally {
-      dbClient.release();
+      dbClient && dbClient.release();
     }
   }
 );
 
-server.post("/createTrack", createTrackOptions, async (request, reply) => {
-  const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
+// server.post("/createTrack", createTrackOptions, async (request, reply) => {
+//   const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
 
-  const dbClient = await server.pg.connect();
-  try {
-    const res = await createTrack(dbClient, body);
-    dbClient.release();
-    return { ...res[0] };
-  } catch (error) {
-    console.error(error);
-    reply.status(500).send("Error querying the database");
-  } finally {
-    dbClient.release();
-  }
-});
+//   const dbClient = await server.pg.connect();
+//   try {
+//     const res = await createTrack(dbClient, body);
+//     dbClient.release();
+//     return { ...res[0] };
+//   } catch (error) {
+//     console.error(error);
+//     reply.status(500).send("Error querying the database");
+//   } finally {
+//     dbClient.release();
+//   }
+// });
 
 server.get<{
   Querystring: ReadShortPostQueryStringParams & {
-    offset?: string;
+    offset?: number;
     sort_by?: SortBy;
+    limit?: number;
   };
-}>("/shortPosts", readShortPostOptions, async (request, reply) => {
+}>("/shortPost", readShortPostOptions, async (request, reply) => {
   // console.debug(readShortPostOptions);
   const filters = request.query;
   const offset = filters.offset;
   const sortBy = filters.sort_by;
+  const limit = filters.limit;
   delete filters.sort_by;
   delete filters.offset;
 
@@ -440,7 +442,8 @@ server.get<{
       dbClient,
       filters,
       readShortPostFilterSchema,
-      offset,
+      offset?.toString(),
+      limit?.toString(),
       sortBy
     );
 

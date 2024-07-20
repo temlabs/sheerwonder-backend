@@ -19,7 +19,7 @@ const readShortPostFilterKeys = [
 exports.readShortPostFilterSchema = {
     created_by_user_id: {
         operation: filterTypes_1.FILTER_OPERATION.EQ,
-        type: "string",
+        type: "number",
         dbColumn: "user_id",
     },
     created_at_from: {

@@ -3,17 +3,17 @@ import { CreateDBTrackParams, createTrackOptions } from "./createTrack";
 
 const createShortPostBodySchema = {
   type: "object",
-  required: ["user_id", "text", "track", "time_in", "time_out"],
+  required: ["text", "track", "timeIn", "timeOut", "extId"],
   properties: {
-    user_id: { type: "string" },
     text: { type: "string" },
     track: {
       type: "object",
       properties: createTrackOptions.schema.body.properties,
       required: createTrackOptions.schema.body.required,
     },
-    time_in: { type: "number" },
-    time_out: { type: "number" },
+    timeIn: { type: "number" },
+    timeOut: { type: "number" },
+    extId: { type: "string" },
   },
 };
 
