@@ -38,25 +38,30 @@ exports.cognitoConfirmSignUpErrorMap = {
         field: "confirmationCode",
         message: "Oops- wrong code. Try again?",
         code: 400,
+        internalCode: "IncorrectCode",
     },
     ExpiredCodeException: {
         field: "confirmationCode",
         message: "This code has expired. Please request a new one",
         code: 400,
+        internalCode: "CodeExpired",
     },
     LimitExceededException: {
         field: "confirmationCode",
         message: "We've got a lot going on! Please try again later",
         code: 429,
+        internalCode: "LimitExceeded",
     },
     TooManyRequestsException: {
         field: "confirmationCode",
         message: "We've got a lot going on! Please try again later.",
         code: 429,
+        internalCode: "RequestsOverload",
     },
     TooManyFailedAttemptsException: {
         field: "confirmationCode",
         message: "You've failed too many times. It's nothing personal but you'll have to try again later",
         code: 429,
+        internalCode: "FailureOverload",
     },
 };

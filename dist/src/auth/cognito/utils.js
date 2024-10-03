@@ -16,6 +16,7 @@ const getCognitoError = (error, errorNames, errorMap) => {
         return ((_a = errorMap[errorName]) !== null && _a !== void 0 ? _a : {
             message: "Something went wrong, please try again",
             code: 500,
+            internalCode: "Error",
         });
     }
 };

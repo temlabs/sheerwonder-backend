@@ -26,6 +26,8 @@ const editUserSchema_1 = require("./src/postgres/users/editUser/editUserSchema")
 const editUser_1 = require("./src/postgres/users/editUser/editUser");
 const cognitoAuthDecorator_1 = __importDefault(require("./src/auth/cognito/decorators/cognitoAuthDecorator"));
 const createShortPost_2 = require("./src/postgres/shortPosts/createShortPost/createShortPost");
+const upvotePost_1 = require("./src/routes/upvotePost");
+const createUpvote_1 = require("./src/postgres/shortPosts/createUpvote/createUpvote");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -69,9 +71,12 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
         const matchingUsers = await (0, listUsers_1.listCognitoUsers)(cognitoClient, email);
         if (matchingUsers.Users && ((_a = matchingUsers.Users) === null || _a === void 0 ? void 0 : _a.length) > 0) {
             reply.status(400).send({
-                message: "A user with this email already exists",
-                code: 400,
-                field: "email",
+                error: {
+                    message: "A user with this email already exists",
+                    code: 400,
+                    field: "email",
+                    internalCode: "UserExists",
+                },
             });
         }
         else {
@@ -112,6 +117,7 @@ server.post("/signUp", signUp_1.signUpOptions, async (request, reply) => {
                 error: {
                     message: "We're so sorry, there seems to be an error",
                     code: 500,
+                    internalCode: "Error",
                 },
             });
         }
@@ -136,6 +142,7 @@ server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, rep
                     code: 404,
                     message: "This user doesn't exist, please create another",
                     field: "confirmationCode",
+                    internalCode: "UserNonExistent",
                 },
             });
         }
@@ -164,6 +171,7 @@ server.post("/confirmSignUp", signUp_1.confirmSignUpOptions, async (request, rep
                 error: {
                     message: "We're so sorry, there seems to be an error",
                     code: 500,
+                    internalCode: "Error",
                 },
             });
         }
@@ -310,21 +318,7 @@ server.post("/shortPost", Object.assign(Object.assign({}, createShortPost_1.crea
         dbClient && dbClient.release();
     }
 });
-// server.post("/createTrack", createTrackOptions, async (request, reply) => {
-//   const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
-//   const dbClient = await server.pg.connect();
-//   try {
-//     const res = await createTrack(dbClient, body);
-//     dbClient.release();
-//     return { ...res[0] };
-//   } catch (error) {
-//     console.error(error);
-//     reply.status(500).send("Error querying the database");
-//   } finally {
-//     dbClient.release();
-//   }
-// });
-server.get("/shortPost", readShortPosts_1.readShortPostOptions, async (request, reply) => {
+server.get("/shortPost", Object.assign(Object.assign({}, readShortPosts_1.readShortPostOptions), { preHandler: server.authenticate() }), async (request, reply) => {
     // console.debug(readShortPostOptions);
     const filters = request.query;
     const offset = filters.offset;
@@ -333,8 +327,10 @@ server.get("/shortPost", readShortPosts_1.readShortPostOptions, async (request, 
     delete filters.sort_by;
     delete filters.offset;
     const dbClient = await server.pg.connect();
+    const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
+    const userId = user.id;
     try {
-        const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset === null || offset === void 0 ? void 0 : offset.toString(), limit === null || limit === void 0 ? void 0 : limit.toString(), sortBy);
+        const res = await (0, postFunctions_1.readShortPosts)(dbClient, filters, readShortPosts_1.readShortPostFilterSchema, offset === null || offset === void 0 ? void 0 : offset.toString(), limit === null || limit === void 0 ? void 0 : limit.toString(), sortBy, userId);
         return res;
     }
     catch (error) {
@@ -343,6 +339,25 @@ server.get("/shortPost", readShortPosts_1.readShortPostOptions, async (request, 
     }
     finally {
         dbClient.release();
+    }
+});
+server.post("/upvote", Object.assign(Object.assign({}, upvotePost_1.upvotePostOptions), { preHandler: server.authenticate() }), async (request, reply) => {
+    const postId = request.query.id;
+    let dbClient;
+    try {
+        dbClient = await server.pg.connect();
+        const user = (await (0, userFunctions_1.readDatabaseUser)(dbClient, { user_sub: request.user.sub }))[0];
+        const userId = user.id;
+        await (0, createUpvote_1.createUpvote)(dbClient, postId, userId);
+        reply.header("Content-Type", "application/json");
+        reply.status(201);
+    }
+    catch (error) {
+        console.error(error);
+        reply.status(500).send("Error querying the database");
+    }
+    finally {
+        dbClient && dbClient.release();
     }
 });
 server.listen({

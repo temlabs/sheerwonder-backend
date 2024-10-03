@@ -40,18 +40,22 @@ exports.cognitoSignUpErrorMap = {
         field: "username",
         message: "This username already exists. Time to get creative...",
         code: 400,
+        internalCode: "UsernameExists",
     },
     InvalidPasswordException: {
         field: "password",
         message: "Please provide a valid password",
         code: 400,
+        internalCode: "InvalidPassword",
     },
     LimitExceededException: {
         message: "We've got a lot going on! Please try again later",
         code: 429,
+        internalCode: "LimitExceeded",
     },
     TooManyRequestsException: {
         message: "We've got a lot going on! Please try again later.",
         code: 429,
+        internalCode: "RequestsOverload",
     },
 };
