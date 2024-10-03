@@ -71,6 +71,8 @@ import { editUser } from "./src/postgres/users/editUser/editUser";
 import cognitoAuthDecorator from "./src/auth/cognito/decorators/cognitoAuthDecorator";
 import { CreateShortPostBody } from "./src/postgres/shortPosts/shortPostTypes";
 import { createShortPost } from "./src/postgres/shortPosts/createShortPost/createShortPost";
+import { upvotePostOptions } from "./src/routes/upvotePost";
+import { createUpvote } from "./src/postgres/shortPosts/createUpvote/createUpvote";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -131,9 +133,12 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
 
     if (matchingUsers.Users && matchingUsers.Users?.length > 0) {
       reply.status(400).send({
-        message: "A user with this email already exists",
-        code: 400,
-        field: "email",
+        error: {
+          message: "A user with this email already exists",
+          code: 400,
+          field: "email",
+          internalCode: "UserExists",
+        },
       });
     } else {
       dbClient = await server.pg.connect();
@@ -181,6 +186,7 @@ server.post("/signUp", signUpOptions, async (request, reply) => {
         error: {
           message: "We're so sorry, there seems to be an error",
           code: 500,
+          internalCode: "Error",
         },
       });
     }
@@ -206,6 +212,7 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
           code: 404,
           message: "This user doesn't exist, please create another",
           field: "confirmationCode",
+          internalCode: "UserNonExistent",
         },
       });
     } else {
@@ -235,6 +242,7 @@ server.post("/confirmSignUp", confirmSignUpOptions, async (request, reply) => {
         error: {
           message: "We're so sorry, there seems to be an error",
           code: 500,
+          internalCode: "Error",
         },
       });
     }
@@ -407,56 +415,75 @@ server.post<{ Body: CreateShortPostBody }>(
   }
 );
 
-// server.post("/createTrack", createTrackOptions, async (request, reply) => {
-//   const body: CreateDBTrackParams = request.body as CreateDBTrackParams;
-
-//   const dbClient = await server.pg.connect();
-//   try {
-//     const res = await createTrack(dbClient, body);
-//     dbClient.release();
-//     return { ...res[0] };
-//   } catch (error) {
-//     console.error(error);
-//     reply.status(500).send("Error querying the database");
-//   } finally {
-//     dbClient.release();
-//   }
-// });
-
 server.get<{
   Querystring: ReadShortPostQueryStringParams & {
     offset?: number;
     sort_by?: SortBy;
     limit?: number;
   };
-}>("/shortPost", readShortPostOptions, async (request, reply) => {
-  // console.debug(readShortPostOptions);
-  const filters = request.query;
-  const offset = filters.offset;
-  const sortBy = filters.sort_by;
-  const limit = filters.limit;
-  delete filters.sort_by;
-  delete filters.offset;
+}>(
+  "/shortPost",
+  { ...readShortPostOptions, preHandler: server.authenticate() },
+  async (request, reply) => {
+    // console.debug(readShortPostOptions);
 
-  const dbClient = await server.pg.connect();
-  try {
-    const res = await readShortPosts(
-      dbClient,
-      filters,
-      readShortPostFilterSchema,
-      offset?.toString(),
-      limit?.toString(),
-      sortBy
-    );
+    const filters = request.query;
+    const offset = filters.offset;
+    const sortBy = filters.sort_by;
+    const limit = filters.limit;
+    delete filters.sort_by;
+    delete filters.offset;
 
-    return res;
-  } catch (error) {
-    console.error(error);
-    reply.status(500).send("Error querying the database");
-  } finally {
-    dbClient.release();
+    const dbClient = await server.pg.connect();
+    const user = (
+      await readDatabaseUser(dbClient, { user_sub: request.user.sub })
+    )[0];
+    const userId = user.id;
+    try {
+      const res = await readShortPosts(
+        dbClient,
+        filters,
+        readShortPostFilterSchema,
+        offset?.toString(),
+        limit?.toString(),
+        sortBy,
+        userId
+      );
+
+      return res;
+    } catch (error) {
+      console.error(error);
+      reply.status(500).send("Error querying the database");
+    } finally {
+      dbClient.release();
+    }
   }
-});
+);
+
+server.post<{ Querystring: { id: number } }>(
+  "/upvote",
+  { ...upvotePostOptions, preHandler: server.authenticate() },
+  async (request, reply) => {
+    const postId = request.query.id;
+    let dbClient;
+    try {
+      dbClient = await server.pg.connect();
+
+      const user = (
+        await readDatabaseUser(dbClient, { user_sub: request.user.sub })
+      )[0];
+      const userId = user.id;
+      await createUpvote(dbClient, postId, userId);
+      reply.header("Content-Type", "application/json");
+      reply.status(201);
+    } catch (error) {
+      console.error(error);
+      reply.status(500).send("Error querying the database");
+    } finally {
+      dbClient && dbClient.release();
+    }
+  }
+);
 
 server.listen(
   {

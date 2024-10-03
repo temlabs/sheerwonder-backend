@@ -1,10 +1,10 @@
+import { ErrorResponse } from "../../error/types";
+
 export type CognitoErrorMap<
   ErrorNamesType extends string,
   RequestBodyType
 > = Partial<{
-  [key in ErrorNamesType]: {
+  [key in ErrorNamesType]: ErrorResponse & {
     field?: keyof RequestBodyType;
-    message: string;
-    code: number;
   };
 }>;

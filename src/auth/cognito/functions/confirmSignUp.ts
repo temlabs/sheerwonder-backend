@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { ConfirmSignUpRequestBody } from "../../authTypes";
 import { calculateSecretHash } from "../utils";
+import { ErrorResponse } from "../../../error/types";
 
 export async function awsConfirmSignUp(
   client: CognitoIdentityProviderClient,
@@ -52,36 +53,39 @@ export type CognitoConfirmSignUpErrorNames =
   (typeof cognitoConfirmSignUpErrorNames)[number];
 
 export const cognitoConfirmSignUpErrorMap: Partial<{
-  [key in (typeof cognitoConfirmSignUpErrorNames)[number]]: {
-    field?: keyof ConfirmSignUpRequestBody;
-    message: string;
-    code: number;
-  };
+  [key in (typeof cognitoConfirmSignUpErrorNames)[number]]: ErrorResponse<
+    keyof ConfirmSignUpRequestBody
+  >;
 }> = {
   CodeMismatchException: {
     field: "confirmationCode",
     message: "Oops- wrong code. Try again?",
     code: 400,
+    internalCode: "IncorrectCode",
   },
   ExpiredCodeException: {
     field: "confirmationCode",
     message: "This code has expired. Please request a new one",
     code: 400,
+    internalCode: "CodeExpired",
   },
   LimitExceededException: {
     field: "confirmationCode",
     message: "We've got a lot going on! Please try again later",
     code: 429,
+    internalCode: "LimitExceeded",
   },
   TooManyRequestsException: {
     field: "confirmationCode",
     message: "We've got a lot going on! Please try again later.",
     code: 429,
+    internalCode: "RequestsOverload",
   },
   TooManyFailedAttemptsException: {
     field: "confirmationCode",
     message:
       "You've failed too many times. It's nothing personal but you'll have to try again later",
     code: 429,
+    internalCode: "FailureOverload",
   },
 };

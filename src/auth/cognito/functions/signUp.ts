@@ -9,6 +9,7 @@ import crypto from "crypto";
 
 import { ConfirmSignUpRequestBody, SignUpRequestBody } from "../../authTypes";
 import { calculateSecretHash } from "../utils";
+import { ErrorResponse } from "../../../error/types";
 
 export async function awsSignUp(
   client: CognitoIdentityProviderClient,
@@ -56,28 +57,30 @@ export const cognitoSignUpErorrNames = [
 export type CognitoSignUpErrorNames = (typeof cognitoSignUpErorrNames)[number];
 
 export const cognitoSignUpErrorMap: Partial<{
-  [key in (typeof cognitoSignUpErorrNames)[number]]: {
-    field?: keyof SignUpRequestBody;
-    message: string;
-    code: number;
-  };
+  [key in (typeof cognitoSignUpErorrNames)[number]]: ErrorResponse<
+    keyof SignUpRequestBody
+  >;
 }> = {
   UsernameExistsException: {
     field: "username",
     message: "This username already exists. Time to get creative...",
     code: 400,
+    internalCode: "UsernameExists",
   },
   InvalidPasswordException: {
     field: "password",
     message: "Please provide a valid password",
     code: 400,
+    internalCode: "InvalidPassword",
   },
   LimitExceededException: {
     message: "We've got a lot going on! Please try again later",
     code: 429,
+    internalCode: "LimitExceeded",
   },
   TooManyRequestsException: {
     message: "We've got a lot going on! Please try again later.",
     code: 429,
+    internalCode: "RequestsOverload",
   },
 };

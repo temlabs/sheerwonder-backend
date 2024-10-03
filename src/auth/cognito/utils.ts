@@ -22,6 +22,7 @@ export const getCognitoError = <ErrorNameType extends string, RequestBodyType>(
       errorMap[errorName] ?? {
         message: "Something went wrong, please try again",
         code: 500,
+        internalCode: "Error",
       }
     );
   }
