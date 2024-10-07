@@ -73,6 +73,9 @@ import { CreateShortPostBody } from "./src/postgres/shortPosts/shortPostTypes";
 import { createShortPost } from "./src/postgres/shortPosts/createShortPost/createShortPost";
 import { upvotePostOptions } from "./src/routes/upvotePost";
 import { createUpvote } from "./src/postgres/shortPosts/createUpvote/createUpvote";
+import { GetSpotifyTokensBody } from "./src/spotify/types";
+import { getSpotifyTokensOptions } from "./src/spotify/getSpotifyTokens";
+import { fetchSpotifyAuthorizationTokens } from "./src/spotify/functions";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -411,6 +414,31 @@ server.post<{ Body: CreateShortPostBody }>(
       reply.status(500).send("Error querying the database");
     } finally {
       dbClient && dbClient.release();
+    }
+  }
+);
+
+server.post<{ Body: GetSpotifyTokensBody }>(
+  "/spotify/tokens",
+  {
+    ...getSpotifyTokensOptions,
+    // preHandler: server.authenticate(),
+  },
+  async (request, reply) => {
+    const authCode = request.body.authCode;
+    try {
+      console.debug({ authCode });
+      const tokens = await fetchSpotifyAuthorizationTokens(authCode);
+      return tokens;
+    } catch (error) {
+      console.error(error);
+      reply.code(500).send({
+        error: {
+          message: (error as Error).message,
+          code: "SpotifyAuth",
+          internalCode: "SpotifyAuth",
+        },
+      });
     }
   }
 );

@@ -40,6 +40,14 @@ exports.default = () => async (request, reply) => {
     }
     catch (error) {
         console.debug({ error });
-        reply.code(401).send({ error: "Authentication failed" });
+        reply
+            .code(401)
+            .send({
+            error: {
+                message: "Authentication failed",
+                internalCode: "AuthFail",
+                code: "AuthFail",
+            },
+        });
     }
 };

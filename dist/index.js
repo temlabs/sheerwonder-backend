@@ -28,6 +28,8 @@ const cognitoAuthDecorator_1 = __importDefault(require("./src/auth/cognito/decor
 const createShortPost_2 = require("./src/postgres/shortPosts/createShortPost/createShortPost");
 const upvotePost_1 = require("./src/routes/upvotePost");
 const createUpvote_1 = require("./src/postgres/shortPosts/createUpvote/createUpvote");
+const getSpotifyTokens_1 = require("./src/spotify/getSpotifyTokens");
+const functions_1 = require("./src/spotify/functions");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -316,6 +318,24 @@ server.post("/shortPost", Object.assign(Object.assign({}, createShortPost_1.crea
     }
     finally {
         dbClient && dbClient.release();
+    }
+});
+server.post("/spotify/tokens", Object.assign({}, getSpotifyTokens_1.getSpotifyTokensOptions), async (request, reply) => {
+    const authCode = request.body.authCode;
+    try {
+        console.debug({ authCode });
+        const tokens = await (0, functions_1.fetchSpotifyAuthorizationTokens)(authCode);
+        return tokens;
+    }
+    catch (error) {
+        console.error(error);
+        reply.code(500).send({
+            error: {
+                message: error.message,
+                code: "SpotifyAuth",
+                internalCode: "SpotifyAuth",
+            },
+        });
     }
 });
 server.get("/shortPost", Object.assign(Object.assign({}, readShortPosts_1.readShortPostOptions), { preHandler: server.authenticate() }), async (request, reply) => {
