@@ -36,6 +36,7 @@ export const extractAuthCodeFromUrl = (query: string): string | null => {
 
 export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
   const url = `${SPOTIFY_BASE_URL}/api/token`;
+  console.debug({ clientId: process.env.SPOTIFY_CLIENT_ID });
   const encodedKeys = Buffer.from(
     process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
   ).toString("base64");
