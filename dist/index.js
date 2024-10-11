@@ -30,6 +30,7 @@ const upvotePost_1 = require("./src/routes/upvotePost");
 const createUpvote_1 = require("./src/postgres/shortPosts/createUpvote/createUpvote");
 const getSpotifyTokens_1 = require("./src/spotify/getSpotifyTokens");
 const functions_1 = require("./src/spotify/functions");
+const refreshAccessToken_1 = require("./src/spotify/refreshAccessToken");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -325,6 +326,23 @@ server.post("/spotify/tokens", Object.assign({}, getSpotifyTokens_1.getSpotifyTo
     try {
         console.debug({ authCode });
         const tokens = await (0, functions_1.fetchSpotifyAuthorizationTokens)(authCode);
+        return tokens;
+    }
+    catch (error) {
+        console.error(error);
+        reply.code(500).send({
+            error: {
+                message: error.message,
+                code: "SpotifyAuth",
+                internalCode: "SpotifyAuth",
+            },
+        });
+    }
+});
+server.post("/spotify/tokens/refresh", Object.assign({}, refreshAccessToken_1.refreshAccessTokenOptions), async (request, reply) => {
+    const refreshToken = request.body.refreshToken;
+    try {
+        const tokens = await (0, functions_1.refreshSpotifyAccessToken)(refreshToken);
         return tokens;
     }
     catch (error) {

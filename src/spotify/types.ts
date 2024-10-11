@@ -16,3 +16,7 @@ export interface SpotifyAuthTokens {
 export interface GetSpotifyTokensBody {
   authCode: string;
 }
+
+export interface RefreshAccessTokenBody {
+  refreshToken: string;
+}

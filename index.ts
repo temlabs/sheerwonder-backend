@@ -73,9 +73,16 @@ import { CreateShortPostBody } from "./src/postgres/shortPosts/shortPostTypes";
 import { createShortPost } from "./src/postgres/shortPosts/createShortPost/createShortPost";
 import { upvotePostOptions } from "./src/routes/upvotePost";
 import { createUpvote } from "./src/postgres/shortPosts/createUpvote/createUpvote";
-import { GetSpotifyTokensBody } from "./src/spotify/types";
+import {
+  GetSpotifyTokensBody,
+  RefreshAccessTokenBody,
+} from "./src/spotify/types";
 import { getSpotifyTokensOptions } from "./src/spotify/getSpotifyTokens";
-import { fetchSpotifyAuthorizationTokens } from "./src/spotify/functions";
+import {
+  fetchSpotifyAuthorizationTokens,
+  refreshSpotifyAccessToken,
+} from "./src/spotify/functions";
+import { refreshAccessTokenOptions } from "./src/spotify/refreshAccessToken";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -429,6 +436,30 @@ server.post<{ Body: GetSpotifyTokensBody }>(
     try {
       console.debug({ authCode });
       const tokens = await fetchSpotifyAuthorizationTokens(authCode);
+      return tokens;
+    } catch (error) {
+      console.error(error);
+      reply.code(500).send({
+        error: {
+          message: (error as Error).message,
+          code: "SpotifyAuth",
+          internalCode: "SpotifyAuth",
+        },
+      });
+    }
+  }
+);
+
+server.post<{ Body: RefreshAccessTokenBody }>(
+  "/spotify/tokens/refresh",
+  {
+    ...refreshAccessTokenOptions,
+    // preHandler: server.authenticate(),
+  },
+  async (request, reply) => {
+    const refreshToken = request.body.refreshToken;
+    try {
+      const tokens = await refreshSpotifyAccessToken(refreshToken);
       return tokens;
     } catch (error) {
       console.error(error);
