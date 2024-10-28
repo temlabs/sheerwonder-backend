@@ -27,28 +27,27 @@ export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
   const encodedKeys = Buffer.from(
     process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
   ).toString("base64");
-  const formData = {
+
+  const formData = new URLSearchParams({
     code: authCode,
     redirect_uri: process.env.SPOTIFY_REDIRECT_URI as string,
     grant_type: "authorization_code",
-  };
-  const body = Object.keys(formData)
-    .map(
-      (key) =>
-        encodeURIComponent(key) +
-        "=" +
-        encodeURIComponent(formData[key as keyof typeof formData])
-    )
-    .join("&");
+  });
+
   const headers = {
     "content-type": "application/x-www-form-urlencoded",
     Authorization: "Basic " + encodedKeys,
   };
 
-  const res = await fetch(url, { method: "POST", headers, body });
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData.toString(),
+  });
 
-  const resJson = (await res.json()) as unknown as SpotifyAuthTokensResponse;
+  const resJson = (await res.json()) as SpotifyAuthTokensResponse;
   throwSpotifyAuthError(resJson);
+
   return {
     accessToken: resJson.access_token,
     expiresIn: resJson.expires_in,
