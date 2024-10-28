@@ -6,4 +6,4 @@ exports.SPOTIFY_BASE_URL = "https://accounts.spotify.com";
 exports.SPOTIFY_PLAYER_BASE_URL = "https://api.spotify.com/v1/me/player";
 // export const SCOPE =
 //   "user-read-private user-modify-playback-state user-read-playback-state streaming playlist-read-private user-read-recently-played";
-exports.SCOPE = "user-modify-playback-state user-read-playback-state streaming";
+exports.SCOPE = "user-read-playback-state";
