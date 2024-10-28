@@ -13,7 +13,11 @@ const generateRandomString = (length: number) => {
   }).join("");
 };
 
-export const constructSpotifyLoginUri = (): { uri: string; state: string } => {
+export const constructSpotifyLoginUri = (): {
+  uri: string;
+  state: string;
+  redirectUri: string;
+} => {
   const state = generateRandomString(16);
   const queryObject = {
     response_type: "code",
@@ -27,5 +31,6 @@ export const constructSpotifyLoginUri = (): { uri: string; state: string } => {
   return {
     uri: "https://accounts.spotify.com/authorize?" + queryString,
     state,
+    redirectUri: process.env.SPOTIFY_REDIRECT_URI as string,
   };
 };

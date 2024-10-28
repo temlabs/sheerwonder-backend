@@ -29,6 +29,7 @@ const constructSpotifyLoginUri = () => {
     return {
         uri: "https://accounts.spotify.com/authorize?" + queryString,
         state,
+        redirectUri: process.env.SPOTIFY_REDIRECT_URI,
     };
 };
 exports.constructSpotifyLoginUri = constructSpotifyLoginUri;
