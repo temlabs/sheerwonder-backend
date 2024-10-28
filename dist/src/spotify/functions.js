@@ -40,6 +40,13 @@ const fetchSpotifyAuthorizationTokens = async (authCode) => {
     });
     const resJson = (await res.json());
     (0, exports.throwSpotifyAuthError)(resJson);
+    console.debug({
+        authCode,
+        accessToken: resJson.access_token,
+        expiresIn: resJson.expires_in,
+        refreshToken: resJson.refresh_token,
+        scope: resJson.scope,
+    });
     return {
         accessToken: resJson.access_token,
         expiresIn: resJson.expires_in,

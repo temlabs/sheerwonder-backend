@@ -47,6 +47,13 @@ export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
 
   const resJson = (await res.json()) as SpotifyAuthTokensResponse;
   throwSpotifyAuthError(resJson);
+  console.debug({
+    authCode,
+    accessToken: resJson.access_token,
+    expiresIn: resJson.expires_in,
+    refreshToken: resJson.refresh_token,
+    scope: resJson.scope,
+  });
 
   return {
     accessToken: resJson.access_token,
