@@ -1,5 +1,5 @@
-import { SCOPE, SPOTIFY_BASE_URL } from "./config";
-import { SpotifyAuthTokens, SpotifyAuthTokensResponse } from "./types";
+import { SPOTIFY_BASE_URL } from "./config";
+import { SpotifyAuthTokensResponse } from "./types";
 
 export const throwSpotifyAuthError = (errorResponse: Object) => {
   if (typeof errorResponse !== "object") {
@@ -16,18 +16,6 @@ export const throwSpotifyAuthError = (errorResponse: Object) => {
   }
 };
 
-export const constructSpotifyLoginUri = (): string => {
-  const queryObject = {
-    response_type: "code",
-    client_id: process.env.SPOTIFY_CLIENT_ID as string,
-    scope: SCOPE as string,
-    redirect_uri: process.env.SPOTIFY_REDIRECT_URI as string,
-  };
-  const queryParams = new URLSearchParams(queryObject);
-  const queryString = queryParams.toString();
-  return "https://accounts.spotify.com/authorize?" + queryString;
-};
-
 export const extractAuthCodeFromUrl = (query: string): string | null => {
   const codeRegex = /code=([^&]+)/;
   const match = query.match(codeRegex);
@@ -36,7 +24,6 @@ export const extractAuthCodeFromUrl = (query: string): string | null => {
 
 export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
   const url = `${SPOTIFY_BASE_URL}/api/token`;
-  console.debug({ clientId: process.env.SPOTIFY_CLIENT_ID });
   const encodedKeys = Buffer.from(
     process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
   ).toString("base64");

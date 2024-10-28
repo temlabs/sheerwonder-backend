@@ -31,6 +31,7 @@ const createUpvote_1 = require("./src/postgres/shortPosts/createUpvote/createUpv
 const getSpotifyTokens_1 = require("./src/spotify/getSpotifyTokens");
 const functions_1 = require("./src/spotify/functions");
 const refreshAccessToken_1 = require("./src/spotify/refreshAccessToken");
+const getSpotifyLoginUrl_1 = require("./src/spotify/getSpotifyLoginUrl");
 require("dotenv").config();
 const fs = require("fs");
 let serverOptions = {};
@@ -321,7 +322,7 @@ server.post("/shortPost", Object.assign(Object.assign({}, createShortPost_1.crea
         dbClient && dbClient.release();
     }
 });
-server.post("/spotify/tokens", Object.assign({}, getSpotifyTokens_1.getSpotifyTokensOptions), async (request, reply) => {
+server.post("/spotify/tokens", Object.assign(Object.assign({}, getSpotifyTokens_1.getSpotifyTokensOptions), { preHandler: server.authenticate() }), async (request, reply) => {
     const authCode = request.body.authCode;
     try {
         console.debug({ authCode });
@@ -339,7 +340,7 @@ server.post("/spotify/tokens", Object.assign({}, getSpotifyTokens_1.getSpotifyTo
         });
     }
 });
-server.post("/spotify/tokens/refresh", Object.assign({}, refreshAccessToken_1.refreshAccessTokenOptions), async (request, reply) => {
+server.post("/spotify/tokens/refresh", Object.assign(Object.assign({}, refreshAccessToken_1.refreshAccessTokenOptions), { preHandler: server.authenticate() }), async (request, reply) => {
     const refreshToken = request.body.refreshToken;
     try {
         const tokens = await (0, functions_1.refreshSpotifyAccessToken)(refreshToken);
@@ -355,6 +356,10 @@ server.post("/spotify/tokens/refresh", Object.assign({}, refreshAccessToken_1.re
             },
         });
     }
+});
+server.get("/spotify/login", { preHandler: server.authenticate() }, async (request, reply) => {
+    const loginUriAndState = (0, getSpotifyLoginUrl_1.constructSpotifyLoginUri)();
+    reply.send(loginUriAndState);
 });
 server.get("/shortPost", Object.assign(Object.assign({}, readShortPosts_1.readShortPostOptions), { preHandler: server.authenticate() }), async (request, reply) => {
     // console.debug(readShortPostOptions);

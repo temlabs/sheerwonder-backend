@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshSpotifyAccessToken = exports.fetchSpotifyAuthorizationTokens = exports.extractAuthCodeFromUrl = exports.constructSpotifyLoginUri = exports.throwSpotifyAuthError = void 0;
+exports.refreshSpotifyAccessToken = exports.fetchSpotifyAuthorizationTokens = exports.extractAuthCodeFromUrl = exports.throwSpotifyAuthError = void 0;
 const config_1 = require("./config");
 const throwSpotifyAuthError = (errorResponse) => {
     if (typeof errorResponse !== "object") {
@@ -15,18 +15,6 @@ const throwSpotifyAuthError = (errorResponse) => {
     }
 };
 exports.throwSpotifyAuthError = throwSpotifyAuthError;
-const constructSpotifyLoginUri = () => {
-    const queryObject = {
-        response_type: "code",
-        client_id: process.env.SPOTIFY_CLIENT_ID,
-        scope: config_1.SCOPE,
-        redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
-    };
-    const queryParams = new URLSearchParams(queryObject);
-    const queryString = queryParams.toString();
-    return "https://accounts.spotify.com/authorize?" + queryString;
-};
-exports.constructSpotifyLoginUri = constructSpotifyLoginUri;
 const extractAuthCodeFromUrl = (query) => {
     const codeRegex = /code=([^&]+)/;
     const match = query.match(codeRegex);
@@ -35,7 +23,6 @@ const extractAuthCodeFromUrl = (query) => {
 exports.extractAuthCodeFromUrl = extractAuthCodeFromUrl;
 const fetchSpotifyAuthorizationTokens = async (authCode) => {
     const url = `${config_1.SPOTIFY_BASE_URL}/api/token`;
-    console.debug({ clientId: process.env.SPOTIFY_CLIENT_ID });
     const encodedKeys = Buffer.from(process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET).toString("base64");
     const formData = {
         code: authCode,

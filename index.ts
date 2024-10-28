@@ -83,6 +83,7 @@ import {
   refreshSpotifyAccessToken,
 } from "./src/spotify/functions";
 import { refreshAccessTokenOptions } from "./src/spotify/refreshAccessToken";
+import { constructSpotifyLoginUri } from "./src/spotify/getSpotifyLoginUrl";
 
 require("dotenv").config();
 const fs = require("fs");
@@ -429,7 +430,7 @@ server.post<{ Body: GetSpotifyTokensBody }>(
   "/spotify/tokens",
   {
     ...getSpotifyTokensOptions,
-    // preHandler: server.authenticate(),
+    preHandler: server.authenticate(),
   },
   async (request, reply) => {
     const authCode = request.body.authCode;
@@ -454,7 +455,7 @@ server.post<{ Body: RefreshAccessTokenBody }>(
   "/spotify/tokens/refresh",
   {
     ...refreshAccessTokenOptions,
-    // preHandler: server.authenticate(),
+    preHandler: server.authenticate(),
   },
   async (request, reply) => {
     const refreshToken = request.body.refreshToken;
@@ -471,6 +472,15 @@ server.post<{ Body: RefreshAccessTokenBody }>(
         },
       });
     }
+  }
+);
+
+server.get(
+  "/spotify/login",
+  { preHandler: server.authenticate() },
+  async (request, reply) => {
+    const loginUriAndState = constructSpotifyLoginUri();
+    reply.send(loginUriAndState);
   }
 );
 
