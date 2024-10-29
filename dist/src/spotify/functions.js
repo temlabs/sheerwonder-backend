@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.refreshSpotifyAccessToken = exports.fetchSpotifyAuthorizationTokens = exports.extractAuthCodeFromUrl = exports.throwSpotifyAuthError = void 0;
-const config_1 = require("./config");
 const throwSpotifyAuthError = (errorResponse) => {
     if (typeof errorResponse !== "object") {
         return;
@@ -22,7 +21,7 @@ const extractAuthCodeFromUrl = (query) => {
 };
 exports.extractAuthCodeFromUrl = extractAuthCodeFromUrl;
 const fetchSpotifyAuthorizationTokens = async (authCode) => {
-    const url = `${config_1.SPOTIFY_BASE_URL}/api/token`;
+    const url = `${process.env.SPOTIFY_BASE_URL}/api/token`;
     const encodedKeys = Buffer.from(process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET).toString("base64");
     const formData = new URLSearchParams({
         code: authCode,
@@ -56,7 +55,7 @@ const fetchSpotifyAuthorizationTokens = async (authCode) => {
 };
 exports.fetchSpotifyAuthorizationTokens = fetchSpotifyAuthorizationTokens;
 const refreshSpotifyAccessToken = async (refreshtoken) => {
-    const url = `${config_1.SPOTIFY_BASE_URL}/api/token`;
+    const url = `${process.env.SPOTIFY_BASE_URL}/api/token`;
     const encodedKeys = Buffer.from(process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET).toString("base64");
     const formData = {
         refresh_token: refreshtoken,

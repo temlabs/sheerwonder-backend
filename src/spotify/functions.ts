@@ -1,4 +1,3 @@
-import { SPOTIFY_BASE_URL } from "./config";
 import { SpotifyAuthTokensResponse } from "./types";
 
 export const throwSpotifyAuthError = (errorResponse: Object) => {
@@ -23,7 +22,7 @@ export const extractAuthCodeFromUrl = (query: string): string | null => {
 };
 
 export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
-  const url = `${SPOTIFY_BASE_URL}/api/token`;
+  const url = `${process.env.SPOTIFY_BASE_URL}/api/token`;
   const encodedKeys = Buffer.from(
     process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
   ).toString("base64");
@@ -64,7 +63,7 @@ export const fetchSpotifyAuthorizationTokens = async (authCode: string) => {
 };
 
 export const refreshSpotifyAccessToken = async (refreshtoken: string) => {
-  const url = `${SPOTIFY_BASE_URL}/api/token`;
+  const url = `${process.env.SPOTIFY_BASE_URL}/api/token`;
   const encodedKeys = Buffer.from(
     process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
   ).toString("base64");

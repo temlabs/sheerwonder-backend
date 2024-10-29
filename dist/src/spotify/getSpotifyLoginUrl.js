@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.constructSpotifyLoginUri = void 0;
-const config_1 = require("./config");
 const crypto_1 = __importDefault(require("crypto"));
 const generateRandomString = (length) => {
     const array = new Uint8Array(length);
@@ -20,7 +19,7 @@ const constructSpotifyLoginUri = () => {
     const queryObject = {
         response_type: "code",
         client_id: process.env.SPOTIFY_CLIENT_ID,
-        scope: config_1.SCOPE,
+        scope: process.env.SPOTIFY_REDIRECT_URI,
         redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
         state,
     };

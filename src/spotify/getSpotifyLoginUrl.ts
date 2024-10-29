@@ -1,4 +1,3 @@
-import { SCOPE } from "./config";
 import crypto from "crypto";
 
 const generateRandomString = (length: number) => {
@@ -22,7 +21,7 @@ export const constructSpotifyLoginUri = (): {
   const queryObject = {
     response_type: "code",
     client_id: process.env.SPOTIFY_CLIENT_ID as string,
-    scope: SCOPE as string,
+    scope: process.env.SPOTIFY_REDIRECT_URI as string,
     redirect_uri: process.env.SPOTIFY_REDIRECT_URI as string,
     state,
   };
